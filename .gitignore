@@ -52,3 +52,16 @@ docs/_build/
 
 # PyBuilder
 target/
+
+.DS_Store
+src/adapter/parser.out
+src/adapter/proxy
+src/adapter/protocol/*
+src/adapter/parsetab.py
+src/pyv8-master
+
+*.o
+*.dylib
+*.so
+src/shim/mac/dumbserver
+
