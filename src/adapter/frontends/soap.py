@@ -20,7 +20,7 @@ from spyne.model.primitive import Integer64
 from spyne.model.primitive import Float
 from spyne.model.primitive import Date
 from spyne.server.wsgi import WsgiApplication
-from wsgiref.simple_server import make_server
+from wsgiref.simple_server import make_server, WSGIRequestHandler
 import wsgiref.util
 from suds import sudsobject
 from suds.sudsobject import Object as SudsObject
@@ -386,11 +386,14 @@ class SoapProxyTerminus(ProxyTerminus):
                 else:
                     return self.application(environ, start_response)
 
+        class QuietHandler(WSGIRequestHandler):
+            def log_request(*args, **kw): pass
+
         if not endpoint:
-            server = make_server('0.0.0.0', 0, WsdlProxy(wsgi_app))
+            server = make_server('0.0.0.0', 0, WsdlProxy(wsgi_app), handler_class=QuietHandler)
             endpoint = ('127.0.0.1', server.server_port)
         else:
-            server = make_server(endpoint[0], endpoint[1], WsdlProxy(wsgi_app))
+            server = make_server(endpoint[0], endpoint[1], WsdlProxy(wsgi_app), handler_class=QuietHandler)
 
         self.listen_forever(server)
         return endpoint

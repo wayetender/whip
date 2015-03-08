@@ -97,7 +97,7 @@ def check_precondition(proc, env):
             if not result:
                 return (False, "Failed precondition %s" % tag.js)
     stop = datetime.datetime.now()
-    print "contract time = %f" % ((stop - start).total_seconds() * 1000)
+    #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
 
 def check_postcondition(proc, env):
@@ -114,7 +114,7 @@ def check_postcondition(proc, env):
             if not result:
                 return (False, "Failed postcondition %s" % tag.js)
     stop = datetime.datetime.now()
-    print "contract time = %f" % ((stop - start).total_seconds() * 1000)
+    #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
 
 class ContractService(proxy.Service):

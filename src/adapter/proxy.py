@@ -367,7 +367,7 @@ class ClientProxy(object):
             callsite.result = self.terminus.execute_request(callsite)
             identities = self.app.after_server(callsite)
         
-        print "ghosts sent = %d" % len(identities)
+        #print "ghosts sent = %d" % len(identities)
         self.app.after_client(callsite, identities)
         return callsite.result
 
@@ -409,6 +409,6 @@ class ServerProxy(object):
         self.app.before_server(cs, identities)
         cs.result = self.terminus.execute_request(cs)
         identities = self.app.after_server(cs)
-        print "ghosts sent = %d" % len(identities)
+        #print "ghosts sent = %d" % len(identities)
         return (cs, identities)
 

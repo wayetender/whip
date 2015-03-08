@@ -10,6 +10,9 @@ from spyne.model.complex import Iterable
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 
+
+logging.getLogger('spyne').setLevel(logging.INFO)
+
 class HelloWorldService(ServiceBase):
     @srpc(Unicode, Integer, _returns=Unicode)
     def login(username, incrementor):
@@ -34,9 +37,13 @@ application = Application([HelloWorldService],
 )
 
 if __name__ == '__main__':
-    from wsgiref.simple_server import make_server
+    from wsgiref.simple_server import make_server, WSGIRequestHandler
     import gc
 
     wsgi_app = WsgiApplication(application)
-    server = make_server('0.0.0.0', 8000, wsgi_app)
+
+    class QuietHandler(WSGIRequestHandler):
+        def log_request(*args, **kw): pass
+
+    server = make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
     server.serve_forever()
