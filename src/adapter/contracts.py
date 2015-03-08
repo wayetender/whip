@@ -2,9 +2,9 @@ import proxy
 from parser import GhostDecl, ServiceContractDecl, JSTag, IdentifiesTag, InitializesTag, UpdatesTag, GenericUpdatesTag, parse
 import logging
 from proxy import StateVars
-from util.js import eval_javascript, is_unknown, AssertionFailure
-from util.js import rewrite_for_unknown_ops
-from pyv8 import PyV8
+#from util.js import eval_code, is_unknown, AssertionFailure, rewrite_for_unknown_ops
+from util.eval import eval_code, is_unknown, AssertionFailure, rewrite_for_unknown_ops
+#from pyv8 import PyV8
 import suds
 import datetime
 
@@ -35,7 +35,7 @@ class SpecResolver(object):
             if ft == 'identifier':
                 continue
             if v != None:
-                v = eval_javascript({}, v)
+                v = eval_code({}, v)
             sv.set(k, v, cs)
         sv.fresh = True
         return sv
@@ -91,7 +91,7 @@ def check_precondition(proc, env):
             #print js
             #logger.debug("checking precondition %s with %s", tag.js, env)
             try:
-                result = eval_javascript(env, js)
+                result = eval_code(env, js)
             except AssertionFailure:
                 result = False
             if not result:
@@ -108,7 +108,7 @@ def check_postcondition(proc, env):
             js = rewrite_for_unknown_ops(tag.js)
             #print js
             try:
-                result = eval_javascript(env, js)
+                result = eval_code(env, js)
             except AssertionFailure:
                 result = False
             if not result:
@@ -163,10 +163,10 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                         ghost = self.registry.lookup_or_create_ghost(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
                         inner_items[identifier] = ghost
                     nenv = dict(env.items() + [('yield', y)])
-                    eval_javascript(nenv, tag.expr)
+                    eval_code(nenv, tag.expr)
                     items.append((tag.name, inner_items))
                 else:            
-                    identifier = eval_javascript(env, tag.expr)
+                    identifier = eval_code(env, tag.expr)
                     ghost = self.registry.lookup_or_create_ghost(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
                     items.append((tag.name, ghost))
         return items
@@ -175,9 +175,9 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         for tag in rpc.tags:
             if isinstance(tag, UpdatesTag) or isinstance(tag, InitializesTag):
                 if tag.ifexpr:
-                    if not eval_javascript(env, tag.ifexpr):
+                    if not eval_code(env, tag.ifexpr):
                         continue
-                val = eval_javascript(env, tag.val)
+                val = eval_code(env, tag.val)
                 v_old = ghosts[tag.name].get(tag.field)
                 if is_unknown(val):
                     if v_old != None:
@@ -203,7 +203,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                             val = None
                     logger.debug( "updating %s to %s for %s" % (field, val, ghost.orig))
                     ghost.orig.set(field, val, callsite.to_thrift_object())
-                eval_javascript(dict(env.items() + [('update', updater)]), tag.val)
+                eval_code(dict(env.items() + [('update', updater)]), tag.val)
 
 
 

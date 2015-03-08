@@ -8,8 +8,9 @@ from protocol.ttypes import Identity, Annotated, IdentityType, IdentityAttribute
 from protocol.ttypes import CallSite as TCallSite
 from util import thriftutil
 from util import serialization
-from util.js import Unknown, unwrap
-from pyv8 import PyV8
+#from util.js import Unknown, unwrap
+from util.eval import Unknown, unwrap
+#from pyv8 import PyV8
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,8 @@ class StateVars(Attribute):
         return val
 
     def to_js(self):
-        class Ghost(PyV8.JSClass):
+        #class Ghost(PyV8.JSClass):
+        class Ghost(object):
             def __init__(self, state, fresh):
                 self.state = state
                 self.fresh = fresh

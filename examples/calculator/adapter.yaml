@@ -1,0 +1,11 @@
+name: calc-adapter
+redirector_port: 9090
+spec: calc.spec
+server_proxies:
+  - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') proxiedby 127.0.0.1:8001 mapstoservice Calculator
+client_proxies:
+  - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') proxiedby 127.0.0.1:8001 mapstoservice Calculator
+#  - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') mapstoservice Calculator
+
+
+
