@@ -8,7 +8,10 @@ INC := -I$(THRIFT_DIR) -I$(BOOST_DIR) -Igen-cpp
 
 .PHONY: all clean
 
-all: libshim.dylib dumbserver
+all: gen-cpp libshim.dylib dumbserver
+
+gen-cpp:
+	thrift -gen cpp ../clientprotocol.thrift
 
 %.o: %.cpp
 	$(CXX) -std=c++11 -stdlib=libc++ -Wall -DHAVE_INTTYPES_H -DHAVE_NETINET_IN_H $(INC) -c $< -o $@
@@ -20,4 +23,5 @@ dumbserver: DumbServer.o $(GEN_OBJ)
 	$(CXX) $^ -o dumbserver -L/usr/local/lib -Lgen-cpp -lthrift
 
 clean:
-	$(RM) *.o gen-cpp/*.o libshim.dylib dumbserver
+	$(RM) *.o libshim.dylib dumbserver
+	rm -rf gen-cpp
