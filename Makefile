@@ -1,10 +1,9 @@
 
-all: shim adapter env/calculator
+all: adapter shim env/calculator
 
 clean: clean-shim clean-env
 
 adapter:
-	#rm -rf env/adapter
 	make env/adapter
 	./src/adapter/update-stubs.sh
 
@@ -22,6 +21,6 @@ clean-shim:
 clean-env:
 	rm -rf env/*
 
-shim: 
+shim: adapter
 	cd src/shim/mac; make
 

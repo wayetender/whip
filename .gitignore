@@ -64,3 +64,5 @@ src/pyv8-master
 *.so
 src/shim/mac/dumbserver
 
+gen-cpp/
+
