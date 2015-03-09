@@ -55,7 +55,6 @@ class Adapter(Thread):
                     self.output.append(line)
                     self.started.release()
                     self.p.terminate()
-                    break
             else:
                 self.output.append(line)
                 adapterlog.info(line)
@@ -65,7 +64,7 @@ class Adapter(Thread):
         if self.error:
             self.finished = True
             subprocess.call('pkill -TERM -P %d' % self.p.pid, shell=True)
-            raise ValueError("did not startup: %s" % self.output[0])
+            raise ValueError("did not startup: %s" % '\n'.join(self.output))
 
     def signalFinish(self):
         self.finished = True

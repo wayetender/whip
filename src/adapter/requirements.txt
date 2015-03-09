@@ -1,6 +1,5 @@
 Mako==0.9.0
 MarkupSafe==0.18
-#-e git://github.com/brokenseal/PyV8-OS-X@c91d6c54aea729161567c1229b12c66f62474513#egg=PyV8-master
 PyYAML==3.11
 lxml==3.3.5
 ply==3.4
