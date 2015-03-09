@@ -21,6 +21,24 @@ def test_login():
     assert len(test_utils.adapter.output) == 0
 
 @with_setup(setup_f, test_utils.teardown_adapter)
+def test_bad_login():
+    url = 'http://localhost:8000/?wsdl'
+    client = Client(url)
+    client.options.cache.clear()
+    sid = client.service.login('badlogin', 3)
+    assert 'error' in sid
+
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_bad_offset():
+    url = 'http://localhost:8000/?wsdl'
+    client = Client(url)
+    client.options.cache.clear()
+    sid = client.service.login('test', -1)
+    assert len(test_utils.adapter.output) > 1
+    assert 'Failed precondition for RPC login ( offset >= 0 )' in str(test_utils.adapter.output)
+    assert "['Calculator 127.0.0.1:8000 :: login(test, -1)']" in str(test_utils.adapter.output)
+
+@with_setup(setup_f, test_utils.teardown_adapter)
 def test_add():
     url = 'http://localhost:8000/?wsdl'
     client = Client(url)
