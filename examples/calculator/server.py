@@ -23,7 +23,6 @@ class HelloWorldService(ServiceBase):
 
     @srpc(Unicode, Integer, Integer, _returns=Integer)
     def add(sid, a, b):
-        gc.collect()
         if sid.startswith('sessionfor'):
             d = int(sid.rpartition('-')[2])
             return a + b + d
@@ -36,7 +35,7 @@ application = Application([HelloWorldService],
     out_protocol=Soap11()
 )
 
-if __name__ == '__main__':
+def make_app():
     from wsgiref.simple_server import make_server, WSGIRequestHandler
     import gc
 
@@ -45,5 +44,8 @@ if __name__ == '__main__':
     class QuietHandler(WSGIRequestHandler):
         def log_request(*args, **kw): pass
 
-    server = make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
-    server.serve_forever()
+    return make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
+
+if __name__ == '__main__':
+    s = make_app()
+    s.serve_forever()

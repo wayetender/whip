@@ -289,12 +289,12 @@ class LocalRedirector(Redirector):
     def accept_redirector_requests(self, port):
         processor = Redirection.Processor(RedirectorHandler(self))
         self.server = thriftutil.start_daemon_with_defaults(processor, port)
-        logger.warn("redirector accepting requests on port %d" % port)
+        logger.debug("redirector accepting requests on port %d" % port)
         
     def register_redirection_port(self, actual_endpoint, proxy_endpoint):
         if actual_endpoint in self.redirections:
             raise ValueError("already redirecting %s" % (actual_endpoint,))
-        logger.warn("Registering proxy endpoint %s for actual endpoint %s" % (proxy_endpoint, actual_endpoint))
+        logger.info("Registering proxy endpoint %s for actual endpoint %s" % (proxy_endpoint, actual_endpoint))
         self.redirections[actual_endpoint] = proxy_endpoint
 
     def get_redirection_port(self, endpoint):

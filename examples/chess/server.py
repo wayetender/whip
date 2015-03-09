@@ -241,5 +241,8 @@ if __name__ == '__main__':
     # supposed to use it in production.
     from wsgiref.simple_server import make_server
     wsgi_app = WsgiApplication(application)
-    server = make_server('0.0.0.0', 8000, wsgi_app)
+    class QuietHandler(WSGIRequestHandler):
+        def log_request(*args, **kw): pass
+
+    server = make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
     server.serve_forever()

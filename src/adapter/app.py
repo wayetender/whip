@@ -6,11 +6,12 @@ from proxy import LocalRedirector
 import logging
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)3d %(funcName)20s() -- %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.WARN)
+    logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)3d %(funcName)20s() -- %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
     if len(sys.argv) != 2:
-        print "usage: ./proxy [proxyconfigfile.yaml]"
+        print "usage: adapter [adapterconfigfile.yaml]"
         sys.exit(1)
+
 
     config = get_config(sys.argv[1])
     config['proxy_name'] = config.get('proxy_name', fresh_client_name())
@@ -28,8 +29,6 @@ if __name__ == '__main__':
 
     for proxy_config in proxies:
         app.register_proxy(proxy_config)
-
-    print "started up"
 
     try:
         while True:

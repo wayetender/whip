@@ -72,16 +72,19 @@ class Registry(object):
         return self.identities[key]
 
 def report_error(registry, msg, identities):
-    print " ----[ERROR]---- %s" % msg
+    msg = "contract failure\n" + msg
     for identity in dict(identities).values():
-        print_trace("", registry, identity, {})
-
+        msg += print_trace("", registry, identity, {})
+    logger.warn(msg)
+    
 def print_trace(depth, registry, identity, seen):
     if (identity.identity.identifier) not in seen:
         seen = {identity.identity.identifier}.union(seen)
-        print depth + " ----[ERROR]---- " + str(identity)
+        msg = "\n ^--" + depth + "--> referenced: " + str(identity)
         for dep in identity.dependencies:
-            print_trace("   " + depth, registry, registry.lookup(dep), seen)
+            msg += print_trace("----" + depth, registry, registry.lookup(dep), seen)
+        return msg
+    return ''
 
 def check_precondition(proc, env):
     start = datetime.datetime.now()
@@ -95,7 +98,7 @@ def check_precondition(proc, env):
             except AssertionFailure:
                 result = False
             if not result:
-                return (False, "Failed precondition %s" % tag.js)
+                return (False, "Failed precondition for RPC %s (%s)" % (proc.name, tag.js))
     stop = datetime.datetime.now()
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
