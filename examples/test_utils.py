@@ -43,6 +43,8 @@ class Adapter(Thread):
         started = False
         for line in iter(self.p.stderr.readline, ''):
             line = line.replace('\r', '').replace('\n', '')
+            if 'Generating LALR tables' in line:
+                continue
             #print "i see line " + line
             #sys.stdout.flush()
             if not started:
