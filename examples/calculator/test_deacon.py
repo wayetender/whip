@@ -11,9 +11,10 @@ logging.getLogger('suds').setLevel(logging.INFO)
 
 setup_f = test_utils.setup_adapter('adapter.yaml', server.make_app())
 
+url = 'http://localhost:8000/?wsdl'
+
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_login():
-    url = 'http://localhost:8000/?wsdl'
     client = Client(url)
     client.options.cache.clear()
     sid = client.service.login('test', 3)
@@ -22,7 +23,6 @@ def test_login():
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_bad_login():
-    url = 'http://localhost:8000/?wsdl'
     client = Client(url)
     client.options.cache.clear()
     sid = client.service.login('badlogin', 3)
@@ -30,7 +30,6 @@ def test_bad_login():
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_bad_offset():
-    url = 'http://localhost:8000/?wsdl'
     client = Client(url)
     client.options.cache.clear()
     sid = client.service.login('test', -1)
@@ -40,7 +39,6 @@ def test_bad_offset():
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_add():
-    url = 'http://localhost:8000/?wsdl'
     client = Client(url)
     client.options.cache.clear()
     offset = 3
