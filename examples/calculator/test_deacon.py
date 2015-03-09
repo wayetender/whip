@@ -11,27 +11,28 @@ logging.getLogger('suds').setLevel(logging.INFO)
 
 setup_f = test_utils.setup_adapter('adapter.yaml', server.make_app())
 
-url = 'http://localhost:8000/?wsdl'
+def get_client():
+    url = 'http://localhost:8000/?wsdl'
+    client = Client(url)
+    client.options.cache.clear()
+    return client
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_login():
-    client = Client(url)
-    client.options.cache.clear()
+    client = get_client()
     sid = client.service.login('test', 3)
     assert 'error' not in sid
     assert len(test_utils.adapter.output) == 0
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_bad_login():
-    client = Client(url)
-    client.options.cache.clear()
+    client = get_client()
     sid = client.service.login('badlogin', 3)
     assert 'error' in sid
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_bad_offset():
-    client = Client(url)
-    client.options.cache.clear()
+    client = get_client()
     sid = client.service.login('test', -1)
     assert len(test_utils.adapter.output) > 1
     assert 'Failed precondition for RPC login ( offset >= 0 )' in str(test_utils.adapter.output)
@@ -39,8 +40,7 @@ def test_bad_offset():
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_add():
-    client = Client(url)
-    client.options.cache.clear()
+    client = get_client()
     offset = 3
     sid = client.service.login('test', offset)
     assert 'error' not in sid
