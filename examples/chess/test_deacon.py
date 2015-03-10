@@ -35,127 +35,127 @@ def fresh_user():
 def fresh_game(client, whiteUser, blackUser):
     return client.service.MakeGame(whiteUser, blackUser)
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_fresh_game():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     games = client.service.GetMyGames(white, PASSWORD)[0]
-#     assert len(games) == 1
-#     game = games[0]
-#     assert game.id == game_id
-#     assert game.white == white
-#     assert game.black == black
-#     assert game.moves == "*"
-#     assert game.result == 'Ongoing'
-#     assert game.hasWhite
-#     assert game.myTurn
-#     games = client.service.GetMyGames(black, PASSWORD)[0]
-#     assert len(games) == 1
-#     game = games[0]
-#     assert game.id == game_id
-#     assert game.white == white
-#     assert game.black == black
-#     assert game.moves == "*"
-#     assert game.result == 'Ongoing'
-#     assert not game.hasWhite
-#     assert not game.myTurn
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_fresh_game():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    games = client.service.GetMyGames(white, PASSWORD)[0]
+    assert len(games) == 1
+    game = games[0]
+    assert game.id == game_id
+    assert game.white == white
+    assert game.black == black
+    assert game.moves == "*"
+    assert game.result == 'Ongoing'
+    assert game.hasWhite
+    assert game.myTurn
+    games = client.service.GetMyGames(black, PASSWORD)[0]
+    assert len(games) == 1
+    game = games[0]
+    assert game.id == game_id
+    assert game.white == white
+    assert game.black == black
+    assert game.moves == "*"
+    assert game.result == 'Ongoing'
+    assert not game.hasWhite
+    assert not game.myTurn
+    assert len(test_utils.adapter.output) == 0
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_single_move():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     #client.service.GetMyGames(white, PASSWORD)
-#     res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
-#     assert res == 'Success'
-#     games = client.service.GetMyGames(white, PASSWORD)[0]
-#     assert len(games) == 1
-#     game = games[0]
-#     assert game.id == game_id
-#     assert game.moves == "1. e4 *"
-#     assert game.hasWhite
-#     assert not game.myTurn
-#     games = client.service.GetMyGames(black, PASSWORD)[0]
-#     assert len(games) == 1
-#     game = games[0]
-#     assert not game.hasWhite
-#     assert game.myTurn
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_single_move():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    #client.service.GetMyGames(white, PASSWORD)
+    res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
+    assert res == 'Success'
+    games = client.service.GetMyGames(white, PASSWORD)[0]
+    assert len(games) == 1
+    game = games[0]
+    assert game.id == game_id
+    assert game.moves == "1. e4 *"
+    assert game.hasWhite
+    assert not game.myTurn
+    games = client.service.GetMyGames(black, PASSWORD)[0]
+    assert len(games) == 1
+    game = games[0]
+    assert not game.hasWhite
+    assert game.myTurn
+    assert len(test_utils.adapter.output) == 0
 
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_two_moves():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     client.service.GetMyGames(white, PASSWORD)
-#     res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
-#     assert res == 'Success'
-#     client.service.GetMyGames(white, PASSWORD)
-#     res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 2, 'd5', False, False, '')
-#     assert res == 'Success'
-#     game = client.service.GetMyGames(white, PASSWORD)[0][0]
-#     assert game.myTurn
-#     assert game.moves == "1. e4 d5 *"
-#     game = client.service.GetMyGames(black, PASSWORD)[0][0]
-#     assert not game.myTurn
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_two_moves():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    client.service.GetMyGames(white, PASSWORD)
+    res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
+    assert res == 'Success'
+    client.service.GetMyGames(white, PASSWORD)
+    res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 2, 'd5', False, False, '')
+    assert res == 'Success'
+    game = client.service.GetMyGames(white, PASSWORD)[0][0]
+    assert game.myTurn
+    assert game.moves == "1. e4 d5 *"
+    game = client.service.GetMyGames(black, PASSWORD)[0][0]
+    assert not game.myTurn
+    assert len(test_utils.adapter.output) == 0
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_notmyturn():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
-#     assert res == 'NotYourTurn'
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_notmyturn():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
+    assert res == 'NotYourTurn'
+    assert len(test_utils.adapter.output) == 0
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_invalidmove():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e5', False, False, '')
-#     assert res == 'InvalidMove'
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_invalidmove():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e5', False, False, '')
+    assert res == 'InvalidMove'
+    assert len(test_utils.adapter.output) == 0
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_invalidgame():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     res = client.service.MakeAMove(black, PASSWORD, -1, False, False, 1, 'e4', False, False, '')
-#     assert res == 'InvalidGameID'
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_invalidgame():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    res = client.service.MakeAMove(black, PASSWORD, -1, False, False, 1, 'e4', False, False, '')
+    assert res == 'InvalidGameID'
+    assert len(test_utils.adapter.output) == 0
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_nodraw():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     res = client.service.MakeAMove(white, PASSWORD, game_id, False, True, 1, 'e4', False, False, '')
-#     assert res == 'NoDrawWasOffered'
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_nodraw():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    res = client.service.MakeAMove(white, PASSWORD, game_id, False, True, 1, 'e4', False, False, '')
+    assert res == 'NoDrawWasOffered'
+    assert len(test_utils.adapter.output) == 0
 
-# @with_setup(setup_f, test_utils.teardown_adapter)
-# def test_invalidmovenumber():
-#     client = get_client()
-#     white = fresh_user()
-#     black = fresh_user()
-#     game_id = fresh_game(client, white, black)
-#     res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
-#     assert res == 'Success'
-#     res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 1, 'd5', False, False, '')
-#     assert res == 'InvalidMoveNumber'
-#     assert len(test_utils.adapter.output) == 0
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_invalidmovenumber():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
+    assert res == 'Success'
+    res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 1, 'd5', False, False, '')
+    assert res == 'InvalidMoveNumber'
+    assert len(test_utils.adapter.output) == 0
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_draw():
