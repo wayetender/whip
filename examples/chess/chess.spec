@@ -1,13 +1,3 @@
-
- # Methods (2):
- #    GetMyGames(xs:string username, xs:string password)
- #    MakeAMove(xs:string username, xs:string password, xs:int gameId, xs:boolean resign, xs:boolean acceptDraw, xs:int movecount, xs:string myMove, xs:boolean offerDraw, xs:boolean claimDraw, xs:string myMessage)
- # Types (4):
- #    ArrayOfXfccGame
- #    MakeAMoveResult
- #    Result
- #    XfccGame
-
 ghost UserInfo {
     @identifier username,
 }
@@ -20,6 +10,7 @@ ghost Game {
 }
 
 service Chess {
+    GetMyGames(username, password)
     @identifies games:Game[] by {{
         for game in result:
             yield (game['id'])
@@ -28,12 +19,18 @@ service Chess {
         #print "i see %s" % result
         for game in result:
             gameGhost = games[str(game['id'])]
-            initialize(gameGhost, 'outcome', game['result']);
-            initialize(gameGhost, 'drawOffered', game['drawOffered'])
-            initialize(gameGhost, 'moves', game['moves'].split(' '))
+            if game['result'] != 'Ongoing':
+                initialize(gameGhost, 'outcome', game['result']);
     }}
-    GetMyGames(username, password)
+    @updates {{
+        for game in result:
+            gameGhost = games[str(game['id'])]
+            update(gameGhost, 'drawOffered', game['drawOffered'])
+            update(gameGhost, 'moves', game['moves'].split(' '))        
+    }}
     
+    
+    MakeAMove(username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage)
     @identifies game:Game by {{ gameId }}
     @precondition {{ game.outcome != 'Ongoing' or game.outcome == '' }}
     #@precondition {{ isValidPGNString(myMove) }}
@@ -43,5 +40,4 @@ service Chess {
         if result == 'Success' and acceptDraw:
             update(game, 'outcome', 'Draw')
     }}
-    MakeAMove(username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage)
 }

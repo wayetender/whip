@@ -309,8 +309,8 @@ def p_procedures_empty(p):
     p[0] = {}
 
 def p_procedures_lst(p):
-    'procedures : tags IDENTIFIER LPAREN formals RPAREN procedures'
-    p[0] = dict([(p[2], Procedure(p[2], p[4], p[1]))] + p[6].items())
+    'procedures : IDENTIFIER LPAREN formals RPAREN tags procedures'
+    p[0] = dict([(p[1], Procedure(p[1], p[3], p[5]))] + p[6].items())
 
 def p_formals_empty(p):
     'formals : '
