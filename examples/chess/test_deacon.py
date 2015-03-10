@@ -153,9 +153,11 @@ def test_invalidmovenumber():
     game_id = fresh_game(client, white, black)
     res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
     assert res == 'Success'
+    client.service.GetMyGames(black, PASSWORD)
     res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 1, 'd5', False, False, '')
     assert res == 'InvalidMoveNumber'
     assert len(test_utils.adapter.output) == 0
+    #assert 'Failed precondition for RPC MakeAMove ( acceptDraw or resign or movecount % 2 == (1 if username == game.white else 0) )' in str(test_utils.adapter.output)
 
 @with_setup(setup_f, test_utils.teardown_adapter)
 def test_draw():
