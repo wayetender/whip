@@ -37,8 +37,6 @@ application = Application([HelloWorldService],
 
 def make_app():
     from wsgiref.simple_server import make_server, WSGIRequestHandler
-    import gc
-
     wsgi_app = WsgiApplication(application)
 
     class QuietHandler(WSGIRequestHandler):

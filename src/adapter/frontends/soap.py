@@ -143,7 +143,7 @@ def to_spyne_model(e, factory, tns):
             if e.ref:
                 typename = e.ref[0]
             else:
-                #raise ValueError('no typename found')
+                raise ValueError('no typename found for %s' % e.name)
                 typename = 'string'
        # print typename
         if typename == 'string':
@@ -180,13 +180,21 @@ def to_spyne_model(e, factory, tns):
 
     number_of_multi_occurrences = 0
     rchild = None
+    ett = e.resolve()
+    if e.restriction():
+        model = to_spyne_model(e.rawchildren[0].ref[0], factory, tns)
+        return model.customize(type_name=str(e.name))
+    if ett.restriction():
+        model = to_spyne_model(ett.rawchildren[0].ref[0], factory, tns)
+        return model.customize(type_name=str(e.name))    
+
     for child, ancestry in children:
         model = to_spyne_model(child, factory, tns)
         if child.multi_occurrence():
             number_of_multi_occurrences += 1
             rchild = model
-        setattr(M, child.name, model)      
-
+        setattr(M, child.name, model)  
+    
     M = ComplexModelMeta(str(e.name), M.__bases__, M.__dict__.copy())
 
     if number_of_multi_occurrences == 1:
@@ -248,7 +256,7 @@ class SoapProxyTerminus(ProxyTerminus):
             return r
         r = client.dict(r)
 
-        print "unwrapping %s" % r
+        #print "unwrapping %s" % r
         if len(r) == 1 and type(r.values()[0]) == list:
             return unwrap_arrays(r.values()[0])
         for k,v in r.items():
@@ -264,8 +272,10 @@ class SoapProxyTerminus(ProxyTerminus):
             return unicode(r)
         if isinstance(r, (unicode, int, str, bool, float, datetime.datetime)):
             return r
-       # if len(r) == 1 and type(r.values()[0]) == list:
-       #     return self.unwrap_arrays(r.values()[0])
+        # XXX: may be a hack
+        if len(r) == 1 and type(r) == dict and type(r.values()[0]) == list:
+           return self.unwrap_arrays(r.values()[0])
+
         elif type(r) == list:
             v2 = []
             for item in r:
@@ -415,7 +425,9 @@ class SoapProxyTerminus(ProxyTerminus):
         #tempTime = datetime.datetime.now() - startTime
         res = m(*list(callsite.args))
         #startTime = datetime.datetime.now()
-        return self.unwrap_arrays(res)
+        res = self.unwrap_arrays(res)
+        #print "res is %s" % res
+        return res
 
 def generate(config, terminal):
     if 'wsdl' not in config:

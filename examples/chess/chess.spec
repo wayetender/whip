@@ -25,6 +25,7 @@ service Chess {
             yield (game['id'])
     }}
     @initializes {{
+        #print "i see %s" % result
         for game in result:
             gameGhost = games[str(game['id'])]
             initialize(gameGhost, 'outcome', game['result']);

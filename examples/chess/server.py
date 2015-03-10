@@ -1,6 +1,4 @@
 import logging
-logging.basicConfig(level=logging.DEBUG)
-
 from spyne.application import Application
 from spyne.decorator import rpc
 from spyne.service import ServiceBase
@@ -26,29 +24,14 @@ from datetime import date
 import pprint
 import sys
 
-class LoggingMiddleware(object):
-    def __init__(self, app):
-        self._app = app
 
-    def __call__(self, env, resp):
-        try:
-            request_body_size = int(env.get('CONTENT_LENGTH', 0))
-        except (ValueError):
-            request_body_size = 0
-
-        #pprint.pprint(('REQUEST', env), stream=sys.stdout)
-        #request_body = env['wsgi.input'].read(request_body_size)
-        #print request_body
-
-        def log_response(status, headers, *args):
-            #pprint.pprint(('RESPONSE', status, headers), stream=sys.stdout)
-            return resp(status, headers, *args)
-
-        return self._app(env, log_response)
+logging.getLogger('spyne').setLevel(logging.INFO)
 
 
-Result = Enum('Ongoing', 'WhiteWins', 'BlackWins', 'Draw', 'WhiteWinAdjucated', 'Cancelled', type_name='Result')
-MakeAMoveResult = Enum('Success', 'ServerError', 'AuthenticationFailed', 'InvalidGameID', 'NotYourGame', 'NotYourTurn', 'InvalidMoveNumber', 'InvalidMove', 'NoDrawWasOffered', 'LostOnTime', 'YouAreOnLeave', 'MoveIsAmbiguous', type_name='MakeAMoveResult')
+NS = "http://www.bennedik.com/webservices/XfccBasic"
+
+Result = Enum('Ongoing', 'WhiteWins', 'BlackWins', 'Draw', 'WhiteWinAdjucated', 'Cancelled', type_name='Result', __namespace__=NS)
+MakeAMoveResult = Enum('Success', 'ServerError', 'AuthenticationFailed', 'InvalidGameID', 'NotYourGame', 'NotYourTurn', 'InvalidMoveNumber', 'InvalidMove', 'NoDrawWasOffered', 'LostOnTime', 'YouAreOnLeave', 'MoveIsAmbiguous', type_name='MakeAMoveResult', __namespace__=NS)
 
 class Game:
     def __init__(self, id, black, white, eventDate, site):
@@ -94,6 +77,7 @@ class Game:
         return game
 
 class XfccGame(ComplexModel):
+    __namespace__ = NS
     _type_info = [
         ('id', Integer),
         ('white', Unicode),
@@ -134,14 +118,16 @@ class XfccGame(ComplexModel):
 
 res = Array(XfccGame)
 res.__type_name__ = 'ArrayOfXfccGame'
+res.__namespace__ = NS
 
 class ChessService(ServiceBase):
-    __namespace__ = 'http://www.bennedik.com/webservices/XfccBasic'
+    __namespace__ = NS
     
     @rpc(Unicode, Unicode, _returns=res)
     def GetMyGames(ctx, username, password):
         games = ctx.app.gamesByUser.get(username, [])
-        return [g.generate_soap_obj(username) for g in games]
+        a = [g.generate_soap_obj(username) for g in games]
+        return a
 
     @rpc(Unicode, Unicode, Integer, Boolean, Boolean, Integer, Unicode, Boolean, Boolean, Unicode, _returns=MakeAMoveResult)
     def MakeAMove(ctx, username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage):
@@ -228,22 +214,22 @@ ChessService.event_manager.add_listener('method_return_document',
 
 
 application = ChessApplication([ChessService],
-    tns='http://www.bennedik.com/webservices/XfccBasic',
-    in_protocol=Soap11(),
-    out_protocol=Soap11(cleanup_namespaces=True)
+    tns=NS,
+    in_protocol=Soap11(validator='lxml'),
+    out_protocol=Soap11()
 )
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+def make_app():
     logging.getLogger('spyne.protocol.xml').setLevel(logging.DEBUG)
     
-    # You can use any Wsgi server. Here, we chose
-    # Python's built-in wsgi server but you're not
-    # supposed to use it in production.
     from wsgiref.simple_server import make_server, WSGIRequestHandler
     wsgi_app = WsgiApplication(application)
     class QuietHandler(WSGIRequestHandler):
         def log_request(*args, **kw): pass
 
-    server = make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
+    return make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    server = make_app()
     server.serve_forever()

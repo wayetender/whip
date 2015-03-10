@@ -192,6 +192,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     if v_old == None:
                         logger.debug( "initializing %s to %s for %s" % (tag.field, val, ghosts[tag.name]))
                         ghosts[tag.name].set(tag.field, val, callsite.to_thrift_object())
+                    elif v_old != val:
+                        raise ValueError("attempting to intialize already intialized ghost %s.%s (%s) to different value (%s)" % (tag.name, tag.field, v_old, val))
                     else:
                         logger.debug("ignoring initialization %s for %s (already set)" % (tag.field, ghosts[tag.name]))
                 else:
@@ -211,8 +213,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             if isinstance(tag, GenericInitializesTag):
                 def initializer(ghost, field, val):
                     v_old = ghost.orig.get(field)
-                    if v_old != None:
-                        raise ValueError("attempting to initialize already set ghost")
+                    if v_old != None and v_old != val:
+                        raise ValueError("attempting to intialize already intialized %s.%s (%s) to different value (%s)" % (ghost.orig, field, v_old, val))
                     logger.debug( "initializing %s to %s for %s" % (field, val, ghost.orig))
                     ghost.orig.set(field, val, callsite.to_thrift_object())
                 eval_code(dict(env.items() + [('initialize', initializer)]), tag.val)
@@ -303,7 +305,10 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             #    callsite.result = str(callsite.result)
             #print references2
             env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])
-            self.process_updates(env, dict(references), callsite, rpc)
+            try:
+                self.process_updates(env, dict(references), callsite, rpc)
+            except ValueError, e:
+                report_error(self.registry, str(e), [])
             references = self.compute_references(callsite, rpc)
             references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
             env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])

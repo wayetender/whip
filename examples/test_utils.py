@@ -36,8 +36,6 @@ class Adapter(Thread):
         self.configfile = configfile
 
     def run(self):
-        if "DYLD_INSERT_LIBRARIES" in os.environ:
-            del os.environ["DYLD_INSERT_LIBRARIES"]
         adapterapp = '%s/../bin/adapter' % os.path.dirname(os.path.abspath(__file__))
         self.p = Popen([adapterapp, self.configfile], stderr=subprocess.PIPE, close_fds=True)
         started = False
@@ -75,6 +73,8 @@ class Adapter(Thread):
 def setup_adapter(configfile, server):
     def f():
         global adapter, serverapp
+        if "DYLD_INSERT_LIBRARIES" in os.environ:
+            del os.environ["DYLD_INSERT_LIBRARIES"]
         serverapp = WsgiServerRunner(server)
         serverapp.start()
         adapter = Adapter(configfile)
