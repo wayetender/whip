@@ -1,5 +1,5 @@
 
-all: adapter shim env/calculator
+all: adapter shim env/calculator env/chess
 
 clean: clean-shim clean-env
 

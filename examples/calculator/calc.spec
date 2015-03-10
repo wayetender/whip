@@ -1,6 +1,7 @@
 ghost Session {
-    username,
-    offset,
+    @identifier sessionId, 
+    @immutable username,
+    @immutable offset,
     valid
 }
 
