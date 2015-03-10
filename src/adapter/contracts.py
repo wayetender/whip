@@ -1,5 +1,5 @@
 import proxy
-from parser import GhostDecl, ServiceContractDecl, JSTag, IdentifiesTag, InitializesTag, UpdatesTag, GenericUpdatesTag, parse
+from parser import GhostDecl, ServiceContractDecl, JSTag, IdentifiesTag, InitializesTag, UpdatesTag, GenericUpdatesTag, GenericInitializesTag, parse
 import logging
 from proxy import StateVars
 #from util.js import eval_code, is_unknown, AssertionFailure, rewrite_for_unknown_ops
@@ -163,6 +163,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                 if tag.multiple:
                     inner_items = {}
                     def y(identifier):
+                        identifier = str(identifier)
                         ghost = self.registry.lookup_or_create_ghost(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
                         inner_items[identifier] = ghost
                     nenv = dict(env.items() + [('yield', y)])
@@ -207,6 +208,14 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     logger.debug( "updating %s to %s for %s" % (field, val, ghost.orig))
                     ghost.orig.set(field, val, callsite.to_thrift_object())
                 eval_code(dict(env.items() + [('update', updater)]), tag.val)
+            if isinstance(tag, GenericInitializesTag):
+                def initializer(ghost, field, val):
+                    v_old = ghost.orig.get(field)
+                    if v_old != None:
+                        raise ValueError("attempting to initialize already set ghost")
+                    logger.debug( "initializing %s to %s for %s" % (field, val, ghost.orig))
+                    ghost.orig.set(field, val, callsite.to_thrift_object())
+                eval_code(dict(env.items() + [('initialize', initializer)]), tag.val)
 
 
 
@@ -263,12 +272,15 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             #    report_error(self.registry, msg, references)
             return self.flatten([v for (k, v) in references])
         else:
-            logger.warn("unknown op: %s" % callsite.opname)
+            logger.debug("unknown op: %s" % callsite.opname)
             return super(ContractsProxyApplication, self).before_client(callsite)
 
     def before_server(self, callsite, client_attributes):
         #logger.debug("before server: %s", callsite)
         self.merge_attributes(client_attributes)
+        if callsite.opname not in callsite.service.decl.rpcs:
+            logger.debug("unknown rpc %s", callsite.opname)
+            return
         rpc = callsite.service.decl.rpcs[callsite.opname]
         references = self.compute_references(callsite, rpc)
         references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
@@ -300,13 +312,16 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             #    report_error(self.registry, msg, references)
             return self.flatten([v for (k, v) in references])
         else:
-            logger.warn("unknown op: %s" % callsite.opname)
+            logger.debug("unknown op: %s" % callsite.opname)
             return super(ContractsProxyApplication, self).after_server(callsite)
         return super(ContractsProxyApplication, self).after_server(callsite)
 
     def after_client(self, callsite, server_attributes):
         #logger.debug("after client: %s", callsite)
         self.merge_attributes(server_attributes)
+        if callsite.opname not in callsite.service.decl.rpcs:
+            logger.debug("unknown rpc %s", callsite.opname)
+            return
         rpc = callsite.service.decl.rpcs[callsite.opname]
         references = self.compute_references(callsite, rpc)
         assert len(rpc.formals) == len(callsite.args)

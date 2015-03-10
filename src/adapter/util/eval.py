@@ -1,3 +1,4 @@
+import textwrap
 
 class Console(object):
     def log(self, text):
@@ -24,8 +25,25 @@ def is_unknown(g):
 
 
 def unwrap(v):
+    if isinstance(v, dict) and len(v.items()) == 1 and isinstance(v.values()[0], list):
+        return v.values()[0]
     return v
 
 
 def eval_code(env, py):
-    return eval(py, env)
+    for k, v in env.items():
+       # print "%s = %s" % (k, v)
+        env[k] = unwrap(v)
+
+    if 'yield' in env:
+        env['_yield'] = env['yield']
+        py = py.replace('yield', '_yield')
+    py = textwrap.dedent(py).strip()
+    try:
+        return eval(py, env)
+    except SyntaxError:
+        py =  '\n'.join((4 * ' ') + x for x in py.splitlines())
+        py = "def f():\n%s" % py
+       # print py
+        exec(py, env)
+        return env['f']()

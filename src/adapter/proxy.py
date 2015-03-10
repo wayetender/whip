@@ -40,22 +40,22 @@ class ProxyApplication(object):
 
     @abc.abstractmethod
     def before_client(self, callsite):
-        logger.warn("before_client %s" % callsite)
+        logger.debug("before_client %s" % callsite)
         return []
 
     @abc.abstractmethod
     def before_server(self, callsite, client_attributes):
-        logger.warn("before_server %s %s" % (callsite, client_attributes))
+        logger.debug("before_server %s %s" % (callsite, client_attributes))
         pass
 
     @abc.abstractmethod
     def after_server(self, callsite):
-        logger.warn("after_server %s" % callsite)
+        logger.debug("after_server %s" % callsite)
         return []
 
     @abc.abstractmethod
     def after_client(self, callsite, server_attributes):
-        logger.warn("after_client %s %s" % (callsite, server_attributes))
+        logger.debug("after_client %s %s" % (callsite, server_attributes))
         pass
 
 class Attribute(object):
@@ -125,7 +125,7 @@ class CallSiteSet(Attribute):
 
 class StateVars(Attribute):
     def __init__(self, name, identifier):
-        super(StateVars, self).__init__(Identity(id_type=IdentityType.TOKEN, name=name, identifier=identifier), [])
+        super(StateVars, self).__init__(Identity(id_type=IdentityType.TOKEN, name=name, identifier=str(identifier)), [])
         self.state = {}
         self.fresh = False
 

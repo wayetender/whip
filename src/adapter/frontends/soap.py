@@ -140,7 +140,11 @@ def to_spyne_model(e, factory, tns):
         if not typename:
             typename = str(e.rawchildren[0].ref[0]) if len(e.rawchildren) > 0 and e.rawchildren[0].ref else None
         if not typename:
-            typename = e.ref[0]
+            if e.ref:
+                typename = e.ref[0]
+            else:
+                #raise ValueError('no typename found')
+                typename = 'string'
        # print typename
         if typename == 'string':
             return Unicode
@@ -186,7 +190,7 @@ def to_spyne_model(e, factory, tns):
     M = ComplexModelMeta(str(e.name), M.__bases__, M.__dict__.copy())
 
     if number_of_multi_occurrences == 1:
-        print "nulti occurence for %s" % M
+        #print "nulti occurence for %s" % M
         M = Iterable(rchild)
         M.__type_name__ = typename
     if number_of_multi_occurrences > 1:

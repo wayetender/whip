@@ -36,12 +36,12 @@ class LoggingMiddleware(object):
         except (ValueError):
             request_body_size = 0
 
-        pprint.pprint(('REQUEST', env), stream=sys.stdout)
+        #pprint.pprint(('REQUEST', env), stream=sys.stdout)
         #request_body = env['wsgi.input'].read(request_body_size)
         #print request_body
 
         def log_response(status, headers, *args):
-            pprint.pprint(('RESPONSE', status, headers), stream=sys.stdout)
+            #pprint.pprint(('RESPONSE', status, headers), stream=sys.stdout)
             return resp(status, headers, *args)
 
         return self._app(env, log_response)
@@ -212,7 +212,8 @@ class ChessApplication(Application):
 from lxml import etree, objectify
 def _on_method_return_document(ctx):
     root = ctx.out_document
-    s = etree.tostring(root, pretty_print=True)
+    return
+    #s = etree.tostring(root, pretty_print=True)
     
     for elem in root.getiterator():
         if not hasattr(elem.tag, 'find'): continue
@@ -221,7 +222,7 @@ def _on_method_return_document(ctx):
             elem.tag = elem.tag[i+1:]
     objectify.deannotate(root, cleanup_namespaces=True)
 
-    print(etree.tostring(root, pretty_print=True))
+    #print(etree.tostring(root, pretty_print=True))
 ChessService.event_manager.add_listener('method_return_document',
                                              _on_method_return_document)
 
@@ -239,7 +240,7 @@ if __name__ == '__main__':
     # You can use any Wsgi server. Here, we chose
     # Python's built-in wsgi server but you're not
     # supposed to use it in production.
-    from wsgiref.simple_server import make_server
+    from wsgiref.simple_server import make_server, WSGIRequestHandler
     wsgi_app = WsgiApplication(application)
     class QuietHandler(WSGIRequestHandler):
         def log_request(*args, **kw): pass

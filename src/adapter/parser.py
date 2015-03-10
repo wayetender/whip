@@ -73,6 +73,12 @@ class GenericUpdatesTag(object):
     def __repr__(self):
         return "@updates %s" % (self.val)
 
+class GenericInitializesTag(object):
+    def __init__(self, val):
+        self.val = val
+
+    def __repr__(self):
+        return "@initializes %s" % (self.val)
 
 class InvariantTag(object):
     def __init__(self, name, expr):
@@ -374,6 +380,10 @@ def p_tags_init(p):
 def p_tags_init_if(p):
     'tag : INITIALIZES IDENTIFIER DOT IDENTIFIER TO JAVASCRIPT IF JAVASCRIPT'
     p[0] = InitializesTag(p[2], p[4], p[6], p[8])
+
+def p_tags_initializes_generic(p):
+    'tag : INITIALIZES JAVASCRIPT'
+    p[0] = GenericInitializesTag(p[2])
 
 def p_tags_invariant(p):
     'tag : INVARIANT FOR IDENTIFIER JAVASCRIPT'
