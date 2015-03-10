@@ -45,6 +45,12 @@ def unwrap(v):
         return v.values()[0]
     return v
 
+def split(r, s):
+    if is_unknown(s):
+        return s
+    import re
+    return re.split(r, s)
+
 
 def eval_code(env, py):
     try:
@@ -53,6 +59,7 @@ def eval_code(env, py):
             env[k] = unwrap(v)
 
         env['isUnknown'] = is_unknown
+        env['split'] = split
 
         if 'yield' in env:
             env['_yield'] = env['yield']

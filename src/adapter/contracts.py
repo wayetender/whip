@@ -71,8 +71,20 @@ class Registry(object):
             self.identities[key] = default
         return self.identities[key]
 
-def report_error(registry, msg, identities):
+def report_error(registry, msg, identities, env={}):
     msg = "contract failure\n" + msg
+    if len(env) > 0:
+        msg += " Variables: \n"
+        for k, v in env.items():
+            if k.startswith('_'):
+                continue
+            if hasattr(v, 'state'):
+                msg += " - %s = Ghost {\n" % k
+                for k1,v1 in v.state.items():
+                    msg += "    - %s = %s (set in %s)\n" % (k1,v1[0], v1[1].op_name)
+                msg += "    }\n" 
+            else:
+                msg += "  - %s = %s\n" % (k, v)
     for identity in dict(identities).values():
         msg += print_trace("", registry, identity, {})
     logger.warn(msg)
@@ -97,8 +109,8 @@ def check_precondition(proc, env):
                 result = eval_code(env, js)
             except AssertionFailure:
                 result = False
-            if is_unknown(result):
-                print "UNKNOWN!!!"
+            #if is_unknown(result):
+            #    print "UNKNOWN!!!"
             if not is_unknown(result) and not result:
                 return (False, "Failed precondition for RPC %s (%s)" % (proc.name, tag.js))
     stop = datetime.datetime.now()
@@ -215,7 +227,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                             raise ValueError("attempting to convert actual ghost state to unknown")
                         else:
                             val = None
-                    logger.debug( "updating %s to %s for %s" % (field, val, ghost.orig))
+                    logger.debug( "updating %s to %s" % (field, val))
                     ghost.orig.set(field, val, callsite.to_thrift_object())
                 eval_code(dict(env.items() + [('update', updater)]), tag.val)
             if isinstance(tag, GenericInitializesTag):
@@ -223,7 +235,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     v_old = ghost.orig.get(field)
                     if v_old != None and v_old != val:
                         raise ValueError("attempting to intialize already intialized %s.%s (%s) to different value (%s)" % (ghost.orig, field, v_old, val))
-                    logger.debug( "initializing %s to %s for %s" % (field, val, ghost.orig))
+                    logger.debug( "initializing %s to %s" % (field, val))
                     ghost.orig.set(field, val, callsite.to_thrift_object())
                 eval_code(dict(env.items() + [('initialize', initializer)]), tag.val)
 
@@ -254,7 +266,9 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     item2[k2].orig = v[k2]
                 items.append((k, item2))
             else:
-                items.append((k, v.to_js()))
+                va = v.to_js()
+                va.orig = v
+                items.append((k, va))
         return items
 
     def flatten(self, items):
@@ -309,7 +323,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         env = dict(zip(rpc.formals, callsite.args) + references2)
         (res, msg) = check_precondition(rpc, env)
         if not res:
-            report_error(self.registry, msg, references)
+            report_error(self.registry, msg, references, env)
 
     def after_server(self, callsite):
         #logger.debug("after server: %s", callsite)
@@ -326,7 +340,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             try:
                 self.process_updates(env, dict(references), callsite, rpc)
             except ValueError, e:
-                report_error(self.registry, str(e), [])
+                report_error(self.registry, str(e), [], env)
             references = self.compute_references(callsite, rpc)
             references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
             env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])
@@ -354,5 +368,5 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])
         (res, msg) = check_postcondition(rpc, env)
         if not res:
-            report_error(self.registry, msg, references)
+            report_error(self.registry, msg, references, env)
             

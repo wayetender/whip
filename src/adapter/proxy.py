@@ -148,7 +148,10 @@ class StateVars(Attribute):
                 if nm == 'fresh':
                     return self.fresh
                 if nm == 'orig':
-                    return self.orig
+                    if 'orig' in self.__dict__.keys():
+                        return self.orig
+                    else:
+                        return None
 
                 if nm in self.state.keys():
                     #print "looking up %s which is %s" % (nm, self.state[nm][0])
