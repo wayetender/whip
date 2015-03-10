@@ -63,4 +63,28 @@ def test_fresh_game():
     assert not game.myTurn
     assert len(test_utils.adapter.output) == 0
 
+@with_setup(setup_f, test_utils.teardown_adapter)
+def test_single_move():
+    client = get_client()
+    white = fresh_user()
+    black = fresh_user()
+    game_id = fresh_game(client, white, black)
+    client.service.GetMyGames(white, PASSWORD)
+    res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
+    assert res == 'Success'
+    games = client.service.GetMyGames(white, PASSWORD)[0]
+    assert len(games) == 1
+    game = games[0]
+    assert game.id == game_id
+    assert game.moves == "1. e4 *"
+    assert game.hasWhite
+    assert not game.myTurn
+    games = client.service.GetMyGames(black, PASSWORD)[0]
+    assert len(games) == 1
+    game = games[0]
+    assert not game.hasWhite
+    assert game.myTurn
+    assert len(test_utils.adapter.output) == 0
+
+
 

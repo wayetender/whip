@@ -97,7 +97,9 @@ def check_precondition(proc, env):
                 result = eval_code(env, js)
             except AssertionFailure:
                 result = False
-            if not result:
+            if is_unknown(result):
+                print "UNKNOWN!!!"
+            if not is_unknown(result) and not result:
                 return (False, "Failed precondition for RPC %s (%s)" % (proc.name, tag.js))
     stop = datetime.datetime.now()
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
@@ -114,7 +116,7 @@ def check_postcondition(proc, env):
                 result = eval_code(env, js)
             except AssertionFailure:
                 result = False
-            if not result:
+            if not is_unknown(result) and not result:
                 return (False, "Failed postcondition %s" % tag.js)
     stop = datetime.datetime.now()
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
@@ -138,6 +140,12 @@ class ContractsTerminal(proxy.Terminal):
         return (s, terminus)
 
 
+class StrDict:
+    def __init__(self):
+        self._items = {}
+    def __getitem__(self, key):
+        return self._items[str(key)]
+
 class ContractsProxyApplication(proxy.ProxyApplication):
     def __init__(self, config, redirector):
         super(ContractsProxyApplication, self).__init__(redirector)
@@ -160,17 +168,17 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                 if 'result' in tag.expr and not callsite.result:
                     continue
 
-                if tag.multiple:
-                    inner_items = {}
+                if tag.multiple: 
+                    inner_items = StrDict()
                     def y(identifier):
                         identifier = str(identifier)
                         ghost = self.registry.lookup_or_create_ghost(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
-                        inner_items[identifier] = ghost
+                        inner_items._items[identifier] = ghost
                     nenv = dict(env.items() + [('yield', y)])
                     eval_code(nenv, tag.expr)
                     items.append((tag.name, inner_items))
                 else:            
-                    identifier = eval_code(env, tag.expr)
+                    identifier = str(eval_code(env, tag.expr))
                     ghost = self.registry.lookup_or_create_ghost(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
                     items.append((tag.name, ghost))
         return items
@@ -233,7 +241,13 @@ class ContractsProxyApplication(proxy.ProxyApplication):
     def to_js(self, refs):
         items = []
         for (k, v) in refs:
-            if isinstance(v, dict):
+            if isinstance(v, StrDict):
+                item2 = StrDict()
+                for k2 in v._items.keys():
+                    item2._items[k2] = v._items[k2].to_js()
+                    item2._items[k2].orig = v._items[k2]
+                items.append((k, item2))
+            elif isinstance(v, dict):
                 item2 = {}
                 for k2 in v.keys():
                     item2[k2] = v[k2].to_js()
@@ -246,6 +260,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
     def flatten(self, items):
         aitems = []
         for item in items:
+            if isinstance(item, StrDict):
+                item = item._items
             if isinstance(item, dict):
                 for v in item.values():
                     aitems.append(v)
@@ -255,6 +271,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
 
     def unfreshen(self, items):
         for item in items:
+            if isinstance(item, StrDict):
+                v = item._items
             if isinstance(item, dict):
                 for v in item.values():
                     v.fresh = False

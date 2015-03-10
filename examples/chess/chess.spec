@@ -18,7 +18,7 @@ service Chess {
     @initializes {{
         #print "i see %s" % result
         for game in result:
-            gameGhost = games[str(game['id'])]
+            gameGhost = games[game['id']]
             if game['result'] != 'Ongoing':
                 initialize(gameGhost, 'outcome', game['result']);
     }}
@@ -26,16 +26,16 @@ service Chess {
         for game in result:
             gameGhost = games[str(game['id'])]
             update(gameGhost, 'drawOffered', game['drawOffered'])
-            update(gameGhost, 'moves', game['moves'].split(' '))        
+            update(gameGhost, 'moves', game['moves'].split(' '))  
     }}
-    
     
     MakeAMove(username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage)
     @identifies game:Game by {{ gameId }}
-    @precondition {{ game.outcome != 'Ongoing' or game.outcome == '' }}
-    #@precondition {{ isValidPGNString(myMove) }}
+    @precondition {{ isUnknown(game.outcome) }}
     @precondition {{ not acceptDraw or game.drawOffered }}
-    @precondition {{ movecount == moves.length }}
+    @precondition {{ 
+        movecount == len(game.moves) 
+    }}
     @updates {{
         if result == 'Success' and acceptDraw:
             update(game, 'outcome', 'Draw')
