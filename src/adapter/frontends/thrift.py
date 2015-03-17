@@ -10,6 +10,7 @@ import logging
 import shutil
 from threading import Thread
 import time
+import importlib
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ def make_method(self, client_proxy, nm):
         return result
     return m
 
+modules = {}
 
 class ThriftProxyTerminus(ProxyTerminus):
     def __init__(self, idl, ns, service, host, port, protocol, transport):
@@ -34,15 +36,17 @@ class ThriftProxyTerminus(ProxyTerminus):
             sys.path.append(d)
             mname = "%s.%s" % (ns, service)
             self.servicename = service
-            m = __import__(mname, globals(), locals(), [service])
+            if ns in sys.modules:
+                m = __import__(ns)
+                reload(m)
+            m = importlib.import_module(mname)
             shutil.rmtree(d)
             deleted = True
             self.iface = getattr(m, 'Iface')
             self.ClientCls = getattr(m, 'Client')
             self.ProcessorCls = getattr(m, 'Processor')
-            trans = thriftutil.get_transport(host, port, transport == 'framed')
-            prot = thriftutil.get_protocol(trans, protocol)
-            self.client = self.ClientCls(prot)
+            self.host = host
+            self.port = port
         finally:
             if not deleted:
                 shutil.rmtree(d)
@@ -74,9 +78,13 @@ class ThriftProxyTerminus(ProxyTerminus):
 
     def execute_request(self, callsite):
         '''returns the result'''
-        m = getattr(self.client, callsite.opname)
+        trans = thriftutil.get_transport(self.host, self.port, self.transport == 'framed')
+        prot = thriftutil.get_protocol(trans, self.protocol)
+        client = self.ClientCls(prot)
+        m = getattr(client, callsite.opname)
         #tempTime = datetime.datetime.now() - startTime
         res = m(*list(callsite.args))
+        trans.close()
         #startTime = datetime.datetime.now()
         #res = self.unwrap_arrays(res)
         #print "res is %s" % res

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Handler:
     def add(self, a, b):
-        return a + b
+        return a + b - 1
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:

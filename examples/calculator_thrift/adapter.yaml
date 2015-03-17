@@ -3,6 +3,8 @@ redirector_port: 9090
 spec: calcthrift.spec
 server_proxies:
   - 127.0.0.1:8000 using thrift(idl='calc.thrift',ns='calc',protocol='binary',transport='framed') proxiedby 127.0.0.1:8001 mapstoservice Adder
+  - 127.0.0.1:38000 using thrift(idl='calc.thrift',ns='calc',protocol='binary',transport='framed') proxiedby 127.0.0.1:38001 mapstoservice AdderDiscovery
 client_proxies:
   - 127.0.0.1:8000 using thrift(idl='calc.thrift',ns='calc',protocol='binary',transport='framed') proxiedby 127.0.0.1:8001 mapstoservice Adder
+  - 127.0.0.1:38000 using thrift(idl='calc.thrift',ns='calc',protocol='binary',transport='framed') proxiedby 127.0.0.1:38001 mapstoservice AdderDiscovery
 
