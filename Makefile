@@ -1,11 +1,13 @@
 
-all: adapter shim env/calculator env/chess
+all: adapter shim env/calculator env/chess env/calculator_thrift
 
 clean: clean-shim clean-env
 
-adapter:
+adapter: src/adapter/parsetab.py
 	make env/adapter
 	./src/adapter/update-stubs.sh
+
+src/adapter/parsetab.py:
 	./src/adapter/regen-parser.sh
 
 env/adapter:
@@ -19,6 +21,10 @@ env/calculator:
 env/chess:
 	virtualenv env/chess
 	source ./env/chess/bin/activate; pip install -r examples/chess/requirements.txt
+
+env/calculator_thrift:
+	virtualenv env/calculator_thrift
+	source ./env/calculator_thrift/bin/activate; pip install -r examples/calculator_thrift/requirements.txt
 
 clean-shim:
 	cd src/shim/mac; make clean
