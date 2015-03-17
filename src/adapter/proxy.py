@@ -232,7 +232,7 @@ class Terminal(object):
         if s not in self.ends:
             protocol = config['using'][0]
             generator = frontends.protocols[protocol]
-            self.ends[s] = generator(config['using'][1], self)
+            self.ends[s] = generator(config['using'][1], self, config)
         return (s, self.ends[s])
 
 

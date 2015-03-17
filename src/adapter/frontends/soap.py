@@ -429,7 +429,7 @@ class SoapProxyTerminus(ProxyTerminus):
         #print "res is %s" % res
         return res
 
-def generate(config, terminal):
+def generate(config, terminal, serviceconfig = None):
     if 'wsdl' not in config:
         raise ValueError("WSDL param must be set")
     return SoapProxyTerminus(config['wsdl'])

@@ -65,4 +65,5 @@ src/pyv8-master
 src/shim/mac/dumbserver
 
 gen-cpp/
+examples/calculator_thrift/calc
 
