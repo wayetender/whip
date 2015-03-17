@@ -1,48 +1,45 @@
-Jobs:
+This test checks the nominal higher order nature of Deacon. It has 3 components: an adder service that adds numbers, a discovery service for adder services, and a client. In order to use the discovery service, you must create an account and login.
 
-    * ``python discovery.py``                                     
-    * ``../../bin/adapter adapter.yaml``
-    * ``../../bin/shim python adder.py 127.0.0.1 8000 127.0.0.1 38000``
-    * ``python client.py``
-    ** ``signup lucas pass``
-    ** ``login lucas pass``
-    ** ``add 1 2``
+ * Deacon Spec: [calcthrift.spec](calcthrift.spec)
+ * Deacon adapter configuration: [adapter.yaml](adapter.yaml)
+ * Thrift IDL: [calc.thrift](calc.thrift)
+ * Fault: [Line 18 of adder.py](adder.py#L18)
+
+Programs run:
+
+ * ``python discovery.py``                                     
+ * ``../../bin/adapter adapter.yaml``
+ * ``../../bin/shim python adder.py 127.0.0.1 8000 127.0.0.1 38000``
+ * ``python client.py``
+ ** ``signup lucas pass``
+ ** ``login lucas pass``
+ ** ``add 1 2``
 
 
-Output:
+Output of setup (before client is run) -- adder service signs up to the discovery service and registers its adder service:
 
 ```
     03/17/2015 01:28:33 PM INFO adder discovery service listening on 38000
     03/17/2015 01:28:37 PM proxy.py:295 accept_redirector_requests() -- DEBUG redirector accepting requests on port 9090
-    03/17/2015 01:28:37 PM thrift.py: 32             __init__() -- DEBUG generating thrift stubs in /var/folders/vc/xxlhr8616sz6570gn72jnww80000gn/T/tmpZhzyzD for IDL /Users/lucas/deacon/examples/calculator_thrift/calc.thrift
-    03/17/2015 01:28:37 PM thrift.py: 32             __init__() -- DEBUG generating thrift stubs in /var/folders/vc/xxlhr8616sz6570gn72jnww80000gn/T/tmpCLLT0o for IDL /Users/lucas/deacon/examples/calculator_thrift/calc.thrift
     03/17/2015 01:28:37 PM proxy.py:300 register_redirection_port() -- INFO Registering proxy endpoint ('127.0.0.1', 58132) for actual endpoint ('127.0.0.1', '8000')
     03/17/2015 01:28:37 PM proxy.py:300 register_redirection_port() -- INFO Registering proxy endpoint ('127.0.0.1', 58133) for actual endpoint ('127.0.0.1', '38000')
     03/17/2015 01:28:40 PM INFO adder service listening on 8000
     03/17/2015 01:28:40 PM proxy.py:277 get_redirection_info() -- DEBUG servicing redirection request for 127.0.0.1:38000
     03/17/2015 01:28:40 PM proxy.py:280 get_redirection_info() -- DEBUG redirection rule found: 127.0.0.1:38000 ==> 127.0.0.1:58133
-    03/17/2015 01:28:40 PM contracts.py:330        before_client() -- DEBUG unknown op: signup
     03/17/2015 01:28:40 PM proxy.py: 43        before_client() -- DEBUG before_client ('127.0.0.1', '38000') proxiedby ('127.0.0.1', '38001') :: signup(['adder-8000', 'password']) 
-    03/17/2015 01:28:40 PM contracts.py:337        before_server() -- DEBUG unknown rpc signup
-    03/17/2015 01:28:40 PM contracts.py:373         after_server() -- DEBUG unknown op: signup
     03/17/2015 01:28:40 PM proxy.py: 53         after_server() -- DEBUG after_server ('127.0.0.1', '38000') proxiedby ('127.0.0.1', '38001') :: signup(['adder-8000', 'password']) -> True
-    03/17/2015 01:28:40 PM contracts.py:381         after_client() -- DEBUG unknown rpc signup
     03/17/2015 01:28:40 PM contracts.py:234      process_updates() -- DEBUG initializing username to adder-8000 for Ghost Session<28b9d1> {'username': None}
     03/17/2015 01:28:40 PM DEBUG registering adder service 127.0.0.1:8000
     03/17/2015 01:28:40 PM INFO registered with adder discovery on 127.0.0.1:38000 as adder-8000
 ```
 
-End of setup, start of client test:
+End of setup, start of client test -- client registers, logs in, gets a (buggy) adder service, and adds 1 and 2:
 
 ```
     03/17/2015 01:28:49 PM proxy.py:277 get_redirection_info() -- DEBUG servicing redirection request for 127.0.0.1:38000
     03/17/2015 01:28:49 PM proxy.py:280 get_redirection_info() -- DEBUG redirection rule found: 127.0.0.1:38000 ==> 127.0.0.1:58133
-    03/17/2015 01:28:55 PM contracts.py:330        before_client() -- DEBUG unknown op: signup
     03/17/2015 01:28:55 PM proxy.py: 43        before_client() -- DEBUG before_client ('127.0.0.1', '38000') proxiedby ('127.0.0.1', '38001') :: signup(['lucas', 'pass']) 
-    03/17/2015 01:28:55 PM contracts.py:337        before_server() -- DEBUG unknown rpc signup
-    03/17/2015 01:28:55 PM contracts.py:373         after_server() -- DEBUG unknown op: signup
     03/17/2015 01:28:55 PM proxy.py: 53         after_server() -- DEBUG after_server ('127.0.0.1', '38000') proxiedby ('127.0.0.1', '38001') :: signup(['lucas', 'pass']) -> True
-    03/17/2015 01:28:55 PM contracts.py:381         after_client() -- DEBUG unknown rpc signup
     03/17/2015 01:28:58 PM contracts.py:234      process_updates() -- DEBUG initializing username to lucas for Ghost Session<95aa32> {'username': None}
     03/17/2015 01:29:03 PM DEBUG returning random service to lucas
     03/17/2015 01:29:03 PM proxy.py:277 get_redirection_info() -- DEBUG servicing redirection request for 127.0.0.1:8000
