@@ -10,10 +10,10 @@ Programs run:
  * ``python discovery.py``                                     
  * ``../../bin/adapter adapter.yaml``
  * ``../../bin/shim python adder.py 127.0.0.1 8000 127.0.0.1 38000``
- * ``python client.py``
- ** ``signup lucas pass``
- ** ``login lucas pass``
- ** ``add 1 2``
+ * ``python client.py`` which runs the following commands:
+  * ``signup lucas pass``
+  * ``login lucas pass``
+  * ``add 1 2``
 
 
 Output of setup (before client is run) -- adder service signs up to the discovery service and registers its adder service:
@@ -57,3 +57,4 @@ End of setup, start of client test -- client registers, logs in, gets a (buggy) 
      ^--------> referenced: ['AdderDiscovery 127.0.0.1:38000 :: login(adder-8000, password)']
 ```
 
+Note the last two lines, which show where the faulty "Adder" service came from: namely the ``register_adder`` command which was performed by session ``28b9d1``, whose ghost originated from ``login(adder-8000, password)``.
