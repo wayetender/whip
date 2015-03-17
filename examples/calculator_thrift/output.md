@@ -10,10 +10,10 @@ Programs run:
  * ``python discovery.py``                                     
  * ``../../bin/adapter adapter.yaml``
  * ``../../bin/shim python adder.py 127.0.0.1 8000 127.0.0.1 38000``
- * ``python client.py``
- ** ``signup lucas pass``
- ** ``login lucas pass``
- ** ``add 1 2``
+ * ``python client.py`` which runs the following commands:
+  * ``signup lucas pass``
+  * ``login lucas pass``
+  * ``add 1 2``
 
 
 Output of setup (before client is run) -- adder service signs up to the discovery service and registers its adder service:
