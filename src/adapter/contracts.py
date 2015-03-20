@@ -80,6 +80,18 @@ class Registry(object):
 
     def lookup_or_create_service(self, name, identifier, cs, resolver):
         key = (name, identifier)
+        if 'http' in identifier:
+            from urlparse import urlparse
+            import socket
+            o = urlparse(identifier)
+            ip = socket.gethostbyname_ex(o.netloc)[2][0]
+            port = o.port
+            if not port:
+                if o.scheme == 'https':
+                    port = 443
+                else:
+                    port = 80
+            identifier = "%s://%s:%d%s" % (o.scheme, str(ip), port, o.path)
         default = resolver.create_default_service(name, identifier, cs)
         if key not in self.identities:
             self.identities[key] = default
@@ -92,10 +104,12 @@ class Registry(object):
             self.identities[key] = default
         return self.identities[key]
 
-def report_error(registry, msg, identities, env={}):
+def report_error(registry, msg, identities, env={}, callsite = None):
     msg = "contract failure\n" + msg
+    if callsite:
+        msg += "\n occurring at " + str(callsite.service)
     if len(env) > 0:
-        msg += " Variables: \n"
+        msg += "\n Variables: \n"
         for k, v in env.items():
             if k.startswith('_'):
                 continue
@@ -344,7 +358,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         env = dict(zip(rpc.formals, callsite.args) + references2)
         (res, msg) = check_precondition(rpc, env)
         if not res:
-            report_error(self.registry, msg, references, env)
+            report_error(self.registry, msg, references, env, callsite)
 
     def after_server(self, callsite):
         #logger.debug("after server: %s", callsite)
@@ -361,7 +375,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             try:
                 self.process_updates(env, dict(references), callsite, rpc)
             except ValueError, e:
-                report_error(self.registry, str(e), [], env)
+                report_error(self.registry, str(e), [], env, callsite)
             references = self.compute_references(callsite, rpc)
             references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
             env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])
@@ -389,5 +403,5 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])
         (res, msg) = check_postcondition(rpc, env)
         if not res:
-            report_error(self.registry, msg, references, env)
+            report_error(self.registry, msg, references, env, callsite)
             

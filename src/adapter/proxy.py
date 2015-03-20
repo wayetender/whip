@@ -28,11 +28,13 @@ class ProxyApplication(object):
         if proxy_config['type'] == 'server':
             proxy = ServerProxy(self, s, terminus)
             self.server_proxies.append(proxy)
+            terminus.set_proxy(proxy)
             proxy.accept_proxied_requests()
             return proxy
         elif proxy_config['type'] == 'client':
             proxy = ClientProxy(self, s, terminus)
             self.client_proxies.append(proxy)
+            terminus.set_proxy(proxy)
             proxy.accept_unproxied_requests()
             return proxy
         else:
@@ -190,6 +192,7 @@ class Service(object):
         self.proxy_endpoint = proxy_endpoint
         self.actual_endpoint = actual_endpoint
         self.service_name = service_name
+        self.overridden_id = "%s:%s" % self.actual_endpoint
 
     def is_proxied(self):
         return self.proxy_endpoint != None
@@ -202,13 +205,13 @@ class Service(object):
         return self.actual_endpoint
 
     def get_identity(self):
-        return Identity(id_type=IdentityType.SERVICE, name=self.service_name, identifier='%s:%s' % self.actual_endpoint)
+        return Identity(id_type=IdentityType.SERVICE, name=self.service_name, identifier='%s' % self.overridden_id)
 
     def __str__(self):
         if self.is_proxied():
-            return '%s proxiedby %s' % (self.actual_endpoint, self.proxy_endpoint)
+            return '%s proxiedby %s' % (self.overridden_id, self.proxy_endpoint)
         else:
-            return 'unproxied %s' % (self.actual_endpoint,)
+            return 'unproxied %s' % (self.overridden_id,)
 
     def __eq__(self, other): 
         return self.__dict__ == other.__dict__
@@ -401,6 +404,7 @@ class ServerProxy(object):
         self.app = app
         self.service = service
         self.terminus = terminus
+        
 
     def accept_proxied_requests(self):
         assert self.service.is_proxied()
