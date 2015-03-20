@@ -1,5 +1,5 @@
 
-all: adapter shim env/calculator env/chess env/calculator_thrift
+all: adapter shim env/calculator env/chess env/calculator_thrift env/evernote
 
 clean: clean-shim clean-env
 
@@ -25,6 +25,10 @@ env/chess:
 env/calculator_thrift:
 	virtualenv env/calculator_thrift
 	source ./env/calculator_thrift/bin/activate; pip install -r examples/calculator_thrift/requirements.txt
+
+env/evernote:
+	virtualenv env/evernote
+	source ./env/evernote/bin/activate; pip install -r examples/evernote/requirements.txt
 
 clean-shim:
 	cd src/shim/mac; make clean
