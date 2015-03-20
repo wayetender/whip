@@ -11,5 +11,5 @@ def fresh_client_name():
 def assert_keys(d, keys):
     for key in keys:
         if key not in d.keys():
-            raise ValueError('Config key %s not in %s', key, d)
+            raise ValueError('Config key %s not in %s' % (key, d))
 

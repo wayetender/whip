@@ -106,6 +106,7 @@ reserved = {
    'if' : 'IF',
    'by' : 'BY',
    'requires' : 'REQUIRES',
+   'fromhttppath' : 'FROMHTTPPATH',
 }
 
 tokens = [
@@ -402,6 +403,10 @@ def p_ghost_requires(p):
 def p_proxystring(p):
     'proxystring : IP COLON INTEGER proxyargs'
     p[0] = ('proxy', dict([('actual', (p[1], p[3]))] + p[4]))
+
+def p_proxyargs_withpath(p):
+    'proxyargs : proxyargs FROMHTTPPATH STRING'
+    p[0] = p[1] + [('fromhttppath', p[3])]
 
 def p_proxyargs_using(p):
     'proxyargs : proxyargs USING IDENTIFIER LPAREN params RPAREN'

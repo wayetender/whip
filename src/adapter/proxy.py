@@ -295,8 +295,9 @@ class LocalRedirector(Redirector):
         logger.debug("redirector accepting requests on port %d" % port)
         
     def register_redirection_port(self, actual_endpoint, proxy_endpoint):
-        if actual_endpoint in self.redirections:
-            raise ValueError("already redirecting %s" % (actual_endpoint,))
+        # removed to support sharding on a single IP endpoint
+        #if actual_endpoint in self.redirections:
+        #    raise ValueError("already redirecting %s" % (actual_endpoint,))
         logger.info("Registering proxy endpoint %s for actual endpoint %s" % (proxy_endpoint, actual_endpoint))
         self.redirections[actual_endpoint] = proxy_endpoint
 
