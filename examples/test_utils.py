@@ -9,10 +9,18 @@ import logging
 import os
 import multiprocessing
 import pickle
+import math
 
 adapterlog = logging.getLogger('adapter')
 
 adapter = None
+
+
+def mean(s): 
+    return sum(s) * 1.0 / len(s)
+def variance(s): 
+    avg = mean(s)
+    return math.sqrt(mean(map(lambda x: (x - avg)**2, s)))
 
 class WsgiServerRunner(object):
     def __init__(self, server):
@@ -89,24 +97,55 @@ def get_adapter_stats():
         ret[item] = t
     return ret
 
-def format_stats(traffic, timing, adapterstats):
-    total_time = timing.elapsed.total_seconds() * 1000
-    total_contract_time = reduce(lambda s,i: s+sum(i), adapterstats['contracts'].values(), 0)
-    total_adapter_time = reduce(lambda s,i: s+sum(i), adapterstats['timing'].values(), 0)
-    total_deacon_traffic = reduce(lambda s,i: s+sum(i), adapterstats['traffic'].values(), 0)
-    total_redirector_traffic = adapterstats['redirector']
-    requests = total_redirector_traffic / 59
-    msg = "Total RPCs, Total Time (ms), Total Contract Time (ms), Total adapter time (ms), Total component traffic (bytes), Total inter-adapter traffic (bytes), Total redirector traffic (bytes)\n"
-    msg += "%d\t%f\t%f\t%f\t%d\t%d\t%d\n" % (requests, total_time, total_contract_time, total_adapter_time, traffic.bytestx + traffic.bytesrx, total_deacon_traffic, total_redirector_traffic)
+def format_stats(report):
+    cnt = len(report)
+    total_times = []
+    total_contract_times = []
+    total_adapter_times = []
+    total_deacon_traffics = []
+    total_redirector_traffics = []
+    total_requests = []
+    for traffic, timing, adapterstats in report:
+        total_times.append(timing.elapsed.total_seconds() * 1000)
+        total_contract_times.append(reduce(lambda s,i: s+sum(i), adapterstats['contracts'].values(), 0))
+        total_adapter_times.append(reduce(lambda s,i: s+sum(i), adapterstats['timing'].values(), 0))
+        total_deacon_traffics.append(reduce(lambda s,i: s+sum(i), adapterstats['traffic'].values(), 0))
+        total_redirector_traffics.append(adapterstats['redirector'])
+        total_requests.append(adapterstats['redirector'] / 59)
+    total_time = mean(total_times)
+    total_contract_time = mean(total_contract_times)
+    total_adapter_time = mean(total_adapter_times)
+    total_deacon_traffic = mean(total_deacon_traffics)
+    total_redirector_traffic = mean(total_redirector_traffics)
+    total_requests = mean(total_requests)
+    msg = "Trials,Total RPCs, Total Time (ms), stdev, Total Contract Time (ms), stdev, Total adapter time (ms), stdev, Total component traffic (bytes), Total inter-adapter traffic (bytes), Total redirector traffic (bytes)\n"
+    msg += "%d\t%d\t%f\t%f\t%f\t%f\t%f\t%f%d\t%d\t%d\n" % (cnt, total_requests, total_time, variance(total_times), total_contract_time, variance(total_contract_times), total_adapter_time, variance(total_adapter_times), traffic.bytestx + traffic.bytesrx, total_deacon_traffic, total_redirector_traffic)
 
-    msg += "\nRPCs\n\n"
-    msg += "RPC Contract time (ms),Adapter time (ms),Inter-adapter traffic (bytes),Total identities (ghosts+services) sent\n"
+    f = {}
+    for t in ['contracts','timing','traffic','ghosts']:
+        d = f.get(t, {})    
+        f[t] = d
+        for _,_,adapterstats in report:
+            for k,v in adapterstats[t].items():
+                s = d.get(k, [])
+                d[k] = s + v
+
+    msg += format_rpc_stats(cnt, f)
+
+    return msg
+
+    
+def format_rpc_stats(trials,adapterstats):
+    msg = "\nRPCs\n\n"
+    msg += "RPC, Trials, Contract time (ms),stdev,Adapter time (ms),stdev,Inter-adapter traffic (bytes),Total identities (ghosts+services) sent\n"
+    contract_time = []
+    adapter_time = []
     for k in adapterstats['contracts'].keys():
-        contract_time = sum(adapterstats['contracts'][k]) / (len(adapterstats['contracts'][k]) / 2)
-        adapter_time = sum(adapterstats['timing'][k]) / len(adapterstats['timing'][k])
+        contract_time.append(sum(adapterstats['contracts'][k][0::2]))
+        adapter_time.append(sum(adapterstats['timing'][k]))
         traffic = sum(adapterstats['traffic'][k]) / len(adapterstats['traffic'][k])
         ghosts = sum(adapterstats['ghosts'][k]) / len(adapterstats['ghosts'][k])
-        msg += "%s\t%f\t%f\t%d\t%d\n" % (k, contract_time, adapter_time, traffic, ghosts)
+        msg += "%s\t%d\t%f\t%f\t%f\t%f\t%d\t%d\n" % (k, trials, mean(contract_time), variance(contract_time), mean(adapter_time), variance(adapter_time), traffic, ghosts)
     return msg
 
 def setup_adapter(configfile, server):

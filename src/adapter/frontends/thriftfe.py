@@ -128,7 +128,7 @@ class ThriftProxyTerminus(ProxyTerminus):
         res = m(*list(callsite.args))
         trans.close()
         tempTime = datetime.datetime.now() - startTime
-        print "time for %s: %f ms" % (callsite.opname, tempTime.total_seconds() * 1000)
+        #print "time for %s: %f ms" % (callsite.opname, tempTime.total_seconds() * 1000)
         #print "res is %s" % res
         return res
 
