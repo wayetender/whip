@@ -208,7 +208,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
     def compute_references(self, callsite, rpc):
         identity = callsite.service.get_identity()
         service = self.registry.lookup_or_create(identity, proxy.CallSiteSet(identity, callsite.to_thrift_object()))
-        items = [('thisServiceOrigin', service)]
+        items = [('receiver', service)]
         env = dict(zip(rpc.formals, callsite.args) + [('result', callsite.result)])
         for tag in rpc.tags:
             if isinstance(tag, IdentifiesTag):

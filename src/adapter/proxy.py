@@ -111,12 +111,17 @@ class CallSiteSet(Attribute):
             if not found:
                 self.callsites.append(ocs)
 
+    def __eq__(self, other):
+        if other == None:
+            return False
+        return self.identity == other.identity
+
     def prettyprint(self, cs):
         args = ", ".join([str(serialization.deserialize_python(arg)) for arg in cs.arguments])
         return "%s %s :: %s(%s)" % (cs.receiver.name, cs.receiver.identifier, cs.op_name, args) 
 
     def __repr__(self):
-        return str([self.prettyprint(x) for x in self.callsites])
+        return "%s seen initially at %s" % (self.identity, [self.prettyprint(x) for x in self.callsites])
 
     def get_attribute_type(self):
         return IdentityAttributeType.CALLSITE_SET
