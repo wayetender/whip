@@ -7,6 +7,7 @@ from protocol import Proxy
 from protocol.ttypes import Identity, Annotated, IdentityType, IdentityAttribute, IdentityAttributeType, StateVar, StateVarsAttribute, CallSiteSetAttribute
 from protocol.ttypes import CallSite as TCallSite
 from util import thriftutil
+import datetime
 from util import serialization
 #from util.js import Unknown, unwrap
 from util.eval import Unknown, unwrap
@@ -22,6 +23,9 @@ class ProxyApplication(object):
         self.client_proxies = []
         self.server_proxies = []
         self.redirector = redirector
+        self.bytesperop = {}
+        self.timeperop = {}
+        self.ghostsperop = {}
 
     def register_proxy(self, proxy_config):
         (s, terminus) = self.terminal.generate_terminus(proxy_config)
@@ -115,6 +119,12 @@ class CallSiteSet(Attribute):
         if other == None:
             return False
         return self.identity == other.identity
+
+    def __ne__(self, other):
+        if other == None:
+            return False
+        return self.identity != other.identity
+
 
     def prettyprint(self, cs):
         args = ", ".join([str(serialization.deserialize_python(arg)) for arg in cs.arguments])
@@ -295,6 +305,7 @@ class RedirectorHandler(object):
 class LocalRedirector(Redirector):
     def __init__(self, listen_port):
         self.redirections = {}
+        self.requests = 0
         self.accept_redirector_requests(listen_port)
 
     def accept_redirector_requests(self, port):
@@ -310,6 +321,7 @@ class LocalRedirector(Redirector):
         self.redirections[actual_endpoint] = proxy_endpoint
 
     def get_redirection_port(self, endpoint):
+        self.requests += 1
         if endpoint not in self.redirections:
             raise ValueError("endpoint for redirection not found")
         return self.redirections[endpoint]
@@ -348,6 +360,29 @@ def thrift_map_to_identities(mapping):
             raise ValueError("unknown attribute type: %s" % attribute.value_type)
     return attributes
 
+class UsageTracker:
+    def __init__(self):
+        self.bytestx = 0
+        self.bytesrx = 0
+    def __repr__(self):
+        return "Bytes Sent: %d Bytes Received: %d" % (self.bytestx, self.bytesrx)
+
+def track_traffic(client, tracker = None):
+    orig_write = client._oprot.trans.write
+    orig_read = client._iprot.trans.read
+    if not tracker:
+        tracker = UsageTracker()
+    def mywrite(b):
+        tracker.bytestx += len(b)
+        return orig_write(b)
+    def myread(a):
+        r = orig_read(a)
+        tracker.bytesrx += len(r)
+        return r
+    client._oprot.trans.write = mywrite
+    client._iprot.trans.read = myread
+    return tracker
+
 class ClientProxy(object):
     def __init__(self, app, service, terminus):
         self.app = app
@@ -364,16 +399,26 @@ class ClientProxy(object):
 
     def on_unproxied_request(self, opname, args):
         '''returns only the result'''
+        start = datetime.datetime.now()
         callsite = CallSite(self.service, opname, args)
         identities = self.app.before_client(callsite)
         if callsite.service.is_proxied():
             proxy = callsite.service.get_proxy_client()
+            tracker = track_traffic(proxy)
             payload = serialization.SerializeThriftMsg(callsite.to_thrift_object())
             request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities))
+            pause = datetime.datetime.now()
             annotated_res = proxy.execute(request)
+            resume = datetime.datetime.now()
             identity_attributes = annotated_res.identity_attributes
             identities = thrift_map_to_identities(identity_attributes)
             callsite.result = serialization.deserialize_python(annotated_res.original_payload)
+            traffic = self.app.bytesperop.get(opname, [])
+            traffic.append(tracker.bytesrx + tracker.bytestx)
+            self.app.bytesperop[opname] = traffic
+            ghosts = self.app.ghostsperop.get(opname, [])
+            ghosts.append(len(identities))
+            self.app.ghostsperop[opname] = ghosts
         else:
             self.app.before_server(callsite, identities)
             callsite.result = self.terminus.execute_request(callsite)
@@ -381,6 +426,10 @@ class ClientProxy(object):
         
         #print "ghosts sent = %d" % len(identities)
         self.app.after_client(callsite, identities)
+        stop = datetime.datetime.now()
+        timing = self.app.timeperop.get(opname, [])
+        timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
+        self.app.timeperop[opname] = timing
         return callsite.result
 
 

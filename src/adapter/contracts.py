@@ -11,6 +11,8 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
+timings = {}
+
 class SpecResolver(object):
     def __init__(self, spec_file):
         self.spec_file = spec_file
@@ -149,6 +151,10 @@ def check_precondition(proc, env):
             if not is_unknown(result) and not result:
                 return (False, "Failed precondition for RPC %s (%s)" % (proc.name, tag.js))
     stop = datetime.datetime.now()
+    global timings
+    t = timings.get(proc.name, [])
+    t.append((stop - start).total_seconds() * 1000)
+    timings[proc.name] = t
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
 
@@ -166,6 +172,10 @@ def check_postcondition(proc, env):
             if not is_unknown(result) and not result:
                 return (False, "Failed postcondition %s" % tag.js)
     stop = datetime.datetime.now()
+    global timings
+    t = timings.get(proc.name, [])
+    t.append((stop - start).total_seconds() * 1000)
+    timings[proc.name] = t
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
 
@@ -341,7 +351,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             #    report_error(self.registry, msg, references)
             return self.flatten([v for (k, v) in references])
         else:
-            logger.debug("unknown op: %s" % callsite.opname)
+            logger.warn("unknown op: %s" % callsite.opname)
             return super(ContractsProxyApplication, self).before_client(callsite)
 
     def before_server(self, callsite, client_attributes):

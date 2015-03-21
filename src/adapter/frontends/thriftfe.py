@@ -9,6 +9,7 @@ import logging
 import shutil
 from threading import Thread
 import time
+import datetime
 import importlib
 from thrift.protocol import TBinaryProtocol
 from util import THttpSecureServer
@@ -108,6 +109,8 @@ class ThriftProxyTerminus(ProxyTerminus):
 
     def execute_request(self, callsite):
         '''returns the result'''
+        startTime = datetime.datetime.now()
+        
         if self.protocol == 'binary-https':
             import thrift.transport.THttpClient as THttpClient
             url = "https://%s:%s%s" % (self.host, self.port, THttpSecureServer.lastPath)
@@ -122,11 +125,10 @@ class ThriftProxyTerminus(ProxyTerminus):
             prot = thriftutil.get_protocol(trans, self.protocol)
         client = self.ClientCls(prot)
         m = getattr(client, callsite.opname)
-        #tempTime = datetime.datetime.now() - startTime
         res = m(*list(callsite.args))
         trans.close()
-        #startTime = datetime.datetime.now()
-        #res = self.unwrap_arrays(res)
+        tempTime = datetime.datetime.now() - startTime
+        print "time for %s: %f ms" % (callsite.opname, tempTime.total_seconds() * 1000)
         #print "res is %s" % res
         return res
 

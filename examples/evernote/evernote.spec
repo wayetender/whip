@@ -32,6 +32,8 @@ service NoteStore {
             initialize(sharedNotebook, 'validAt', noteStore)
     }}
 
+    getSharedNotebookByAuth(authToken)
+
     authenticateToSharedNotebook(shareKey, authToken)
     @identifies sharedNotebook : SharedNotebook by {{ shareKey }}
     @precondition {{ 
