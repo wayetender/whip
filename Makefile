@@ -3,8 +3,7 @@ all: adapter shim env/calculator env/chess env/calculator_thrift env/evernote
 
 clean: clean-shim clean-env
 
-adapter: src/adapter/parsetab.py
-	make env/adapter
+adapter: env/adapter src/adapter/parsetab.py
 	./src/adapter/update-stubs.sh
 
 src/adapter/parsetab.py:
