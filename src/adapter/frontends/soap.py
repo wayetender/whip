@@ -126,7 +126,7 @@ def to_spyne_model(e, factory, tns):
         else:
             t = factory.resolver.find("{%s}%s" % (tns, typename))
             if t == None:
-                raise ValueError("unknown type1 %s" % typename)
+                raise ValueError("unknown type1 %s %s" % (tns,typename))
             e = t.resolve()
             #print dir(e.rawchildren[0])
 
@@ -256,7 +256,7 @@ class SoapProxyTerminus(ProxyTerminus):
             return r
         r = client.dict(r)
 
-        #print "unwrapping %s" % r
+        # print "unwrapping %s" % r
         if len(r) == 1 and type(r.values()[0]) == list:
             return unwrap_arrays(r.values()[0])
         for k,v in r.items():
@@ -264,6 +264,8 @@ class SoapProxyTerminus(ProxyTerminus):
         return r
 
     def unwrap_arrays(self, r):
+        if not r:
+            return r
         if isinstance(r, sudsobject.Object):
             r = self.client.dict(r)
         if isinstance(r, datetime.datetime):

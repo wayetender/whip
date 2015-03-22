@@ -44,4 +44,6 @@ service Chess {
         if result == 'Success' and resign:
             initialize(game, 'outcome', 'BlackWins' if username == game.white else 'WhiteWins')
     }}
+
+    MakeGame(whitePlayer, blackPlayer)
 }

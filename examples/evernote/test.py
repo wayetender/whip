@@ -3,6 +3,7 @@ sys.path.append('../')
 import test_utils
 from evernote.api.client import EvernoteClient
 from evernote.edam.notestore.ttypes import NoteFilter, NotesMetadataResultSpec
+import time
 
 host = 'localhost:9443'
 token = '......................faketoken........................'
@@ -39,10 +40,14 @@ def run_sharednotes(host):
     return (tracker, total)
 
 if __name__ == '__main__':
-    NUM_TRIALS = 2
+    NUM_TRIALS = 25
+    import mockevernoteserver
+    mockevernoteserver.start_all()
+    time.sleep(1.0)
+    print "starting %d trials..." % NUM_TRIALS
     report = []
     for trial in xrange(NUM_TRIALS):
-        test_utils.setup_adapter_only('adapter.yaml')()
+        test_utils.setup_adapter_only('adapter.yaml', 2)()
         (traffic, stopwatch) = run_sharednotes(host)
         stats = test_utils.get_adapter_stats()
         report.append((traffic, stopwatch, stats))

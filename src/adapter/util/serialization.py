@@ -2,6 +2,8 @@ from thrift.protocol import TBinaryProtocol
 from thrift.transport import TTransport
 import pickle
 
+import bz2
+
 
 def SerializeThriftMsg(msg, protocol_type=TBinaryProtocol.TBinaryProtocol):
     """Serialize a thrift message using the given protocol.
@@ -43,8 +45,10 @@ def DeserializeThriftMsg(msg, data,
     return msg
 
 def serialize_python(msg):
+    #return bz2.compress(pickle.dumps(msg))
     return pickle.dumps(msg)
 
 def deserialize_python(data):
+    #return pickle.loads(bz2.decompress(data))
     return pickle.loads(data)
 

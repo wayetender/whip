@@ -86,7 +86,8 @@ class Registry(object):
             from urlparse import urlparse
             import socket
             o = urlparse(identifier)
-            ip = socket.gethostbyname_ex(o.netloc)[2][0]
+            h = o.netloc.split(':')[0]
+            ip = socket.gethostbyname_ex(h)[2][0]
             port = o.port
             if not port:
                 if o.scheme == 'https':

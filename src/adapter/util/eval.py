@@ -51,6 +51,8 @@ def split(r, s):
     import re
     return re.split(r, s)
 
+def is_fresh(ghost):
+        return ghost.fresh
 
 def eval_code(env, py):
     try:
@@ -60,6 +62,7 @@ def eval_code(env, py):
 
         env['isUnknown'] = is_unknown
         env['split'] = split
+        env['isFresh'] = is_fresh
 
         if 'yield' in env:
             env['_yield'] = env['yield']
