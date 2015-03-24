@@ -406,6 +406,7 @@ class ClientProxy(object):
             proxy = callsite.service.get_proxy_client()
             tracker = track_traffic(proxy)
             payload = serialization.SerializeThriftMsg(callsite.to_thrift_object())
+            v1 = len(identities)
             request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities))
             pause = datetime.datetime.now()
             annotated_res = proxy.execute(request)
@@ -417,7 +418,7 @@ class ClientProxy(object):
             traffic.append(tracker.bytesrx + tracker.bytestx)
             self.app.bytesperop[opname] = traffic
             ghosts = self.app.ghostsperop.get(opname, [])
-            ghosts.append(len(identities))
+            ghosts.append(len(identities) + v1)
             self.app.ghostsperop[opname] = ghosts
         else:
             self.app.before_server(callsite, identities)

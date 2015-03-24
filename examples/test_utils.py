@@ -141,12 +141,24 @@ def format_stats(report):
                 d[k] = s + v
 
     msg += format_rpc_stats(cnt, f)
+    msg += format_rpc_rttimes()
 
     return msg
 
+
+def format_rpc_rttimes():
+    global measurements
+    msg = "\nRT Times\n\n"
+    msg += "RPC,RT Time (ms)\n"
+
+    for k in measurements.keys():
+        rttime = mean(measurements[k])
+        msg += "%s\t%f\n" % (k, rttime)
+
+    return msg
     
 def format_rpc_stats(trials,adapterstats):
-    msg = "\nRPCs\n\n"
+    msg = "\nDeacon RPC Counts\n\n"
     msg += "RPC, Trials, Contract time (ms),stdev,Adapter time (ms),stdev,Inter-adapter traffic (bytes),Total identities (ghosts+services) sent\n"
     for k in adapterstats['contracts'].keys():
         contract_time = []
@@ -215,6 +227,17 @@ class StopWatch(object):
         else:
             return "stopwatch %s: %f ms" % (self.name, self.elapsed.total_seconds() * 1000)
 
+
+measurements = {}
+def measure(rpc, f):
+    global measurements
+    n = datetime.datetime.now()
+    v = f()
+    diff = (datetime.datetime.now() - n).total_seconds() * 1000
+    d = measurements.get(rpc, [])
+    d.append(diff)
+    measurements[rpc] = d
+    return v
 
 def track_suds_traffic(client, tracker = None):
     orig = client.options.transport.send

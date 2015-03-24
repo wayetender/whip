@@ -37,17 +37,17 @@ def run_maintests():
     white = fresh_user()
     black = fresh_user()
     game_id = fresh_game(client, white, black)
-    client.service.GetMyGames(white, PASSWORD)
+    test_utils.measure('GetMyGames', lambda: client.service.GetMyGames(white, PASSWORD))
     
-    res = client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, '')
+    res = test_utils.measure('MakeAMove', lambda: client.service.MakeAMove(white, PASSWORD, game_id, False, False, 1, 'e4', False, False, ''))
     assert res == 'Success'
-    client.service.GetMyGames(white, PASSWORD)
-    res = client.service.MakeAMove(black, PASSWORD, game_id, False, False, 2, 'd5', False, False, '')
+    test_utils.measure('GetMyGames', lambda: client.service.GetMyGames(white, PASSWORD))
+    res = test_utils.measure('MakeAMove', lambda: client.service.MakeAMove(black, PASSWORD, game_id, False, False, 2, 'd5', False, False, ''))
     assert res == 'Success'
-    game = client.service.GetMyGames(white, PASSWORD)[0][0]
+    game = test_utils.measure('GetMyGames', lambda: client.service.GetMyGames(white, PASSWORD)[0][0])
     assert game.myTurn
     assert game.moves == "1. e4 d5 *"
-    game = client.service.GetMyGames(black, PASSWORD)[0][0]
+    game = test_utils.measure('GetMyGames', lambda: client.service.GetMyGames(black, PASSWORD)[0][0])
     assert not game.myTurn
     if len(test_utils.adapter.output) != 0:
         print test_utils.adapter.output
