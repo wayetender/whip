@@ -442,11 +442,12 @@ class ServerProxyHandler(object):
         raise ValueError("XXX todo")
 
     def execute(self, request):
+        start = datetime.datetime.now()
         payload = request.original_payload
         identity_attributes = request.identity_attributes
         callsite = serialization.DeserializeThriftMsg(TCallSite(), payload)
         identities = thrift_map_to_identities(identity_attributes)
-        (callsite, identities) = self.server_proxy.on_proxied_request(callsite, identities)
+        (callsite, identities) = self.server_proxy.on_proxied_request(callsite, identities, start)
         payload = serialization.serialize_python(callsite.result) # serialization.SerializeThriftMsg(callsite.to_thrift_object())
         return Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities))
 
@@ -466,12 +467,21 @@ class ServerProxy(object):
         processor = Proxy.Processor(ServerProxyHandler(self))
         self.server = thriftutil.start_daemon_with_defaults(processor, self.service.proxy_endpoint[1])
 
-    def on_proxied_request(self, tcallsite, identities):
+    def on_proxied_request(self, tcallsite, identities, start=None):
+        if not start:
+            start = datetime.datetime.now()
+        opname = tcallsite.op_name
         cs = CallSite(self.service, tcallsite.op_name, tcallsite.arguments)
         cs.deserialize_args()
         self.app.before_server(cs, identities)
+        pause = datetime.datetime.now()
         cs.result = self.terminus.execute_request(cs)
+        resume = datetime.datetime.now()
         identities = self.app.after_server(cs)
         #print "ghosts sent = %d" % len(identities)
+        stop = datetime.datetime.now()
+        timing = self.app.timeperop.get(opname, [])
+        timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
+        self.app.timeperop[opname] = timing
         return (cs, identities)
 

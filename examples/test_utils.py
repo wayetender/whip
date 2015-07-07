@@ -149,11 +149,11 @@ def format_stats(report):
 def format_rpc_rttimes():
     global measurements
     msg = "\nRT Times\n\n"
-    msg += "RPC,RT Time (ms)\n"
+    msg += "RPC,RT Time (ms), stddev\n"
 
     for k in measurements.keys():
         rttime = mean(measurements[k])
-        msg += "%s\t%f\n" % (k, rttime)
+        msg += "%s\t%f\t%f\n" % (k, rttime, variance(measurements[k]))
 
     return msg
     
@@ -167,7 +167,8 @@ def format_rpc_stats(trials,adapterstats):
         for i in xrange(len(adapterstats['contracts'][k])):
             if i % 2 == 0:
                 contract_time.append(adapterstats['contracts'][k][i] + adapterstats['contracts'][k][i+1])
-        adapter_time = adapterstats['timing'][k]
+                adapter_time.append(adapterstats['timing'][k][i] + adapterstats['timing'][k][i+1])
+
         traffic = sum(adapterstats['traffic'][k]) / len(adapterstats['traffic'][k])
         ghosts = sum(adapterstats['ghosts'][k]) / len(adapterstats['ghosts'][k])
         msg += "%s\t%d\t%f\t%f\t%f\t%f\t%d\t%d\n" % (k, trials, mean(contract_time), variance(contract_time), mean(adapter_time), variance(adapter_time), traffic, ghosts)

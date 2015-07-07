@@ -67,19 +67,19 @@ class AirlineService(ServiceBase):
     @srpc(Boolean, Integer, Unicode, Passenger, _returns=Booking)
     def bookSeat(isTestOnly, bookingRequestNumber, flightId, passenger):
         global DELAY
-        time.sleep(DELAY)
+        time.sleep(.393)
         return Booking(bookingRequestNumber=bookingRequestNumber,ticketNumber=1,flightId=flightId,passenger=passenger)
 
     @srpc(Unicode, Unicode, DateTime, DateTime, Integer, Integer, _returns=FlightList)
     def findSeats(departAirport, arriveAirport, earliestDepartTime, latestDepartTime, minimumSeatsAvailable, maximumFlightsToReturn):
         global DELAY
-        time.sleep(DELAY)
+        time.sleep(.370)
         return []
 
     @srpc(Unicode, _returns=PassengerResult)
     def getPassengerList(flightId):
         global DELAY
-        time.sleep(DELAY)
+        time.sleep(.381)
         f = Flight(flightId=flightId,flightSeatsAvailable=1, departAirport="XXX",arriveAirport="XXX",departTime=datetime.datetime.now(),arriveTime=datetime.datetime.now(),flightSeatPriceUSD=100)
         p = Passenger(dateOfBirth='1900-01-01',firstName='test1',lastName='lastname')
         return PassengerResult(flight=f, passenger=[p])

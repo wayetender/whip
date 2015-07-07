@@ -21,32 +21,32 @@ class Handler(UserStore.Iface):
     def getUser(self, authenticationToken):
         return User(id=1, username="test", email="test", name="test", timezone=None, privilege=None, created=None, updated=None, deleted=None, active=None, shardId=None, attributes=None, accounting=None, premiumInfo=None, businessUserInfo=None)
     def getNoteStoreUrl(self, authenticationToken):
-        time.sleep(DELAY)
+        time.sleep(.01)
         #print "getting note store for %s" % authenticationToken
         return "https://localhost:9444/"
 
 class Handler2(NoteStore.Iface):
     def listNotebooks(self, authenticationToken):
-        time.sleep(DELAY)
+        time.sleep(.01)
         return []
 
     def listLinkedNotebooks(self, authToken):
-        time.sleep(DELAY)
+        time.sleep(.451)
         ln = LinkedNotebook(guid='guid0', noteStoreUrl='https://localhost:9444/')
         return [ln]
 
     def getSharedNotebookByAuth(self, authToken):
-        time.sleep(DELAY)
+        time.sleep(.521)
         sn = SharedNotebook(notebookGuid='guid1')
         return sn
 
     def authenticateToSharedNotebook(self, shareKey, authToken):
-        time.sleep(DELAY)
+        time.sleep(.495)
         ar = AuthenticationResult(authenticationToken='temp1')
         return ar
 
     def findNotes(self, authToken, filter, offset, maxNotes):
-        time.sleep(DELAY)
+        time.sleep(.474)
         note = Note(guid='guid2', title='test')
         notes = [note]
         nl = NoteList(notes=notes, totalNotes=len(notes),startIndex=0)

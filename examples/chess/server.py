@@ -129,7 +129,7 @@ class ChessService(ServiceBase):
     @rpc(Unicode, Unicode, _returns=res)
     def GetMyGames(ctx, username, password):
         global DELAY
-        time.sleep(DELAY)
+        time.sleep(.459)
         games = ctx.app.gamesByUser.get(username, [])
         a = [g.generate_soap_obj(username) for g in games]
         return a
@@ -137,7 +137,7 @@ class ChessService(ServiceBase):
     @rpc(Unicode, Unicode, Integer, Boolean, Boolean, Integer, Unicode, Boolean, Boolean, Unicode, _returns=MakeAMoveResult)
     def MakeAMove(ctx, username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage):
         global DELAY
-        time.sleep(DELAY)
+        time.sleep(.465)
         game = ctx.app.games.get(gameId)
         if not game:
             return MakeAMoveResult.InvalidGameID

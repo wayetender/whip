@@ -8,7 +8,6 @@ import time
 host = 'localhost:9443'
 token = '......................faketoken........................'
 
-
 def run_sharednotes(host):
     total = test_utils.StopWatch('total')
     client = EvernoteClient(token=token, service_host=host)
@@ -22,15 +21,17 @@ def run_sharednotes(host):
 
     noteStore = client.get_note_store()
     test_utils.track_traffic(noteStore._client, tracker)
-    sharedNotebooks = noteStore.listLinkedNotebooks()
+    sharedNotebooks = test_utils.measure('listLinkedNotebooks', lambda: noteStore.listLinkedNotebooks())
     for sharedNotebook in sharedNotebooks:
-        sharedNoteStore = client.get_shared_note_store(sharedNotebook)
-        notebook = sharedNoteStore.getSharedNotebookByAuth()
+        #print sharedNotebook.shareKey
+        sharedNoteStore = test_utils.measure('authenticateToSharedNotebook', lambda: client.get_shared_note_store(sharedNotebook))
+        #print sharedNoteStore.token
+        notebook = test_utils.measure('getSharedNotebookByAuth', lambda: sharedNoteStore.getSharedNotebookByAuth())
         #print "Notes in shared notebook: %s" % notebook.notebookGuid
         f = NoteFilter(notebookGuid=notebook.notebookGuid)
         #rs = NotesMetadataResultSpec(includeTitle=True)
         #noteList = sharedNoteStore.findNotesMetadata(f, 0, 10, rs)
-        noteList = sharedNoteStore.findNotes(f, 0, 10)
+        noteList = test_utils.measure('findNotes', lambda: sharedNoteStore.findNotes(f, 0, 10))
         for note in noteList.notes:
             #print " - %s" % note.title
             pass
@@ -39,8 +40,10 @@ def run_sharednotes(host):
 
     return (tracker, total)
 
+#run_sharednotes(host)
+
 if __name__ == '__main__':
-    NUM_TRIALS = 25
+    NUM_TRIALS = 100
     import mockevernoteserver
     mockevernoteserver.start_all()
     time.sleep(1.0)
