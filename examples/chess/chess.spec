@@ -1,16 +1,18 @@
-ghost UserInfo {
-    @identifier username,
-}
-
-ghost Game {
-    @identifier gameId,
-    @immutable outcome,
-    @immutable white,
-    drawOffered, # @mutable
-    moves # @mutable
-}
 
 service Chess {
+    
+    ghost UserInfo {
+        @identifier username,
+    }
+
+    ghost Game {
+        @identifier gameId,
+        @immutable outcome,
+        @immutable white,
+        drawOffered, # @mutable
+        moves # @mutable
+    }
+
     GetMyGames(username, password)
     @identifies games:Game[] by {{ for game in result: yield (game['id']) }}
     @initializes {{

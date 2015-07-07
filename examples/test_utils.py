@@ -71,10 +71,13 @@ class Adapter(Thread):
             else:
                 if any(map(lambda l: l in line, ['Registering proxy endpoint', 'Terminated: 15'])):
                     continue
-                self.output.append(line)
-                if not self.suppress_next_line:
-                    adapterlog.info(line)
-                self.suppress_next_line = False
+                if '[debug-passthru]' in line:
+                    print line
+                else:
+                    self.output.append(line)
+                    if not self.suppress_next_line:
+                        adapterlog.info(line)
+                    self.suppress_next_line = False
 
     def waitForStartup(self):
         self.started.acquire()

@@ -6,7 +6,7 @@ clean: clean-shim clean-env
 adapter: env/adapter src/adapter/parsetab.py
 	./src/adapter/update-stubs.sh
 
-src/adapter/parsetab.py:
+src/adapter/parsetab.py: src/adapter/parser.py
 	./src/adapter/regen-parser.sh
 
 env/adapter:

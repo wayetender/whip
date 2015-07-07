@@ -7,12 +7,15 @@ class GhostDecl(object):
         return "ghost %s %s requires {{ %s }}\n" % (self.name, self.fields, self.requires)
 
 class ServiceContractDecl(object):
-    def __init__(self, name, rpcs):
+    def __init__(self, name, rpcs, ghosts = None):
         self.name = name
         self.rpcs = rpcs
+        self.ghosts = ghosts
 
     def __repr__(self):
-        return "service %s { \n\t%s\n }" % (self.name, "\n\n\t".join([str(rpc) for rpc in self.rpcs.values()]))
+        return "service %s { \n\t%s\n%s\n }" % (self.name, 
+            "\n\n\t".join([str(ghost) for ghost in self.ghosts]),
+            "\n\n\t".join([str(rpc) for rpc in self.rpcs.values()]))
 
 class Procedure(object):
     def __init__(self, name, formals, tags):
@@ -257,9 +260,17 @@ def p_idl_empty(p):
     'idl : '
     p[0] = []
 
+def p_ghosts(p):
+    'ghosts : ghost ghosts'
+    p[0] = [p[1]] + p[2]
+
+def p_ghosts_empty(p):
+    'ghosts : '
+    p[0] = []
+
 def p_service(p):
-    'service : SERVICE IDENTIFIER LBRACE procedures RBRACE'
-    p[0] = ServiceContractDecl(p[2], p[4])
+    'service : SERVICE IDENTIFIER LBRACE ghosts procedures RBRACE'
+    p[0] = ServiceContractDecl(p[2], p[5], p[4])
 
 def p_params_empty(p):
     'params : '

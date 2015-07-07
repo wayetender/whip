@@ -50,6 +50,9 @@ class SpecResolver(object):
 
     def add_service(self, service):
         self.services[service.name] = service
+        for g in service.ghosts:
+            g.service_owner = service
+            self.add_ghost_decl(g)
 
     def resolve_service(self, name):
         return self.services[name]
@@ -72,11 +75,11 @@ class Registry(object):
         key = (identity.name, identity.identifier)
         self.identities[key] = v
 
-    def lookup_or_create_id(self, name, identifier, cs, resolver):
+    def lookup_or_create_id(self, name, identifier, cs, resolver, my_id = None):
         if name in resolver.services:
             return self.lookup_or_create_service(name, identifier, cs, resolver)
         elif name in resolver.ghosts:
-            return self.lookup_or_create_ghost(name, identifier, cs, resolver)
+            return self.lookup_or_create_ghost(name, identifier, cs, resolver, my_id)
         else:
             raise ValueError("unknown identity type: %s" % name)
 
@@ -100,8 +103,10 @@ class Registry(object):
             self.identities[key] = default
         return self.identities[key]
 
-    def lookup_or_create_ghost(self, name, identifier, cs, resolver):
-        key = (name, identifier)
+    def lookup_or_create_ghost(self, name, identifier, cs, resolver, my_id):
+        key = (name, my_id.identifier + ':' + identifier if my_id else identifier)
+        #if my_id:
+        #    logger.info("[debug-passthru] ID is %s", key)
         default = resolver.create_default_ghost(name, identifier, cs)
         if key not in self.identities:
             self.identities[key] = default
@@ -230,14 +235,14 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     inner_items = StrDict()
                     def y(identifier):
                         identifier = str(identifier)
-                        ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
+                        ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver, identity)
                         inner_items._items[identifier] = ghost
                     nenv = dict(env.items() + [('yield', y)])
                     eval_code(nenv, tag.expr)
                     items.append((tag.name, inner_items))
                 else:            
                     identifier = str(eval_code(env, tag.expr))
-                    ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver)
+                    ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver, identity)
                     items.append((tag.name, ghost))
         return items
 
