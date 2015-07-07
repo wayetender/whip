@@ -1,9 +1,5 @@
 
 service Chess {
-    
-    ghost UserInfo {
-        @identifier username,
-    }
 
     ghost Game {
         @identifier gameId,

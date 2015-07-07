@@ -1,23 +1,24 @@
 
-ghost Flight {
-    @identifier flightId,
-    @immutable departTime,
-    passengers
-} requires {{
-  (flightId[0].isLetter() and flightId[1].isLetter() and len(flightId) <= 6) 
-}}
-
 ghost BookingRequest {
     @identifier bookingRequestNumber
 }
 
 
 service Airline {
-    
+    ghost Flight {
+        @identifier flightId,
+        @immutable departTime,
+        passengers
+    } requires {{
+      (flightId[0].isLetter() and flightId[1].isLetter() and len(flightId) <= 6) 
+    }}
+
     bookSeat(isTestOnly, bookingRequestNumber, flightId, passenger)
     @identifies flight:Flight by {{ flightId }}
     @identifies bookingReq:BookingRequest by {{ bookingRequestNumber }}
     @precondition {{ isFresh(bookingReq) }}
+    @precondition {{ ' ' not in passenger['firstName'] }}
+    @precondition {{ ' ' not in passenger['lastName'] }}
     @updates flight.passengers to {{ 
        # print "passenger is %s" % passenger
         return flight.passengers + [passenger] }}

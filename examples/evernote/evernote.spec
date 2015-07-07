@@ -5,6 +5,7 @@ ghost SharedNotebook {
 }
 
 service UserStore {
+
     getNoteStoreUrl(authToken)
     @identifies ns:NoteStore by {{ result }}
 
