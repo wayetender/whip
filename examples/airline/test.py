@@ -48,7 +48,7 @@ def run_bookflight():
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)3d %(funcName)20s() -- %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-    NUM_TRIALS = 500
+    NUM_TRIALS = 10
     print "starting %d trials..." % NUM_TRIALS
     report = []
     for trial in xrange(NUM_TRIALS):

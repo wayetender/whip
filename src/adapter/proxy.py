@@ -26,6 +26,10 @@ class ProxyApplication(object):
         self.bytesperop = {}
         self.timeperop = {}
         self.ghostsperop = {}
+        self.interpreters = {}
+
+    def register_interpreter(self, nm, config):
+        self.terminal.register_interpreter(nm, config)
 
     def register_proxy(self, proxy_config):
         (s, terminus) = self.terminal.generate_terminus(proxy_config)
@@ -238,6 +242,7 @@ class Service(object):
 class Terminal(object):
     def __init__(self):
         self.ends = {}
+        self.interpreters = {}
 
     def get_terminus(self, s):
         if s not in self.ends:
@@ -245,12 +250,25 @@ class Terminal(object):
         else:
             return self.ends(s)
 
+    def register_interpreter(self, nm, config):
+        print "%s, %s" % (nm, config)
+        self.interpreters[nm] = config
+
     def generate_terminus(self, config):
         s = Service(config.get('proxiedby', None), config['actual'])
         if s not in self.ends:
-            protocol = config['using'][0]
+            if 'using' in config:
+                interpreter = config['using'][0]
+            elif 'mapsto' in config:
+                if config['mapsto'] in self.interpreters:
+                    interpreter = self.interpreters[config['mapsto']]
+                else:
+                    raise ValueError('unknown way to interpret service %s' % config['mapsto'])
+            else:
+                raise ValueError("unknown way to interpret connection %s" % str(config['actual']))
+            protocol = interpreter[0]
             generator = frontends.protocols[protocol]
-            self.ends[s] = generator(config['using'][1], self, config)
+            self.ends[s] = generator(interpreter[1], self, config)
         return (s, self.ends[s])
 
 

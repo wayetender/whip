@@ -26,6 +26,8 @@ service AdderDiscovery {
 
     // returns the host information for an adder service
     Hostinfo get_adder_info(1: string sid) throws (1: NotLoggedIn e);
+
+    void dumb(1: string host, 2: int port)
 }
 
 

@@ -248,7 +248,8 @@ from ast import *
 
 def p_goal(p):
     '''goal : idl 
-        | proxystring'''
+        | proxystring
+        | usinginterp'''
     p[0] = p[1]
 
 def p_idl_entry(p):
@@ -419,9 +420,13 @@ def p_proxyargs_withpath(p):
     'proxyargs : proxyargs FROMHTTPPATH STRING'
     p[0] = p[1] + [('fromhttppath', p[3])]
 
+def p_using(p):
+    'usinginterp : IDENTIFIER LPAREN params RPAREN'
+    p[0] = ('interpreter', ('using', (p[1], p[3])))
+
 def p_proxyargs_using(p):
-    'proxyargs : proxyargs USING IDENTIFIER LPAREN params RPAREN'
-    p[0] = p[1] + [('using', (p[3], p[5]))]
+    'proxyargs : USING proxyargs usinginterp'
+    p[0] = p[1] + [p[2][1]]
 
 def p_proxyargs_mapsto(p):
     'proxyargs : proxyargs MAPSTO IDENTIFIER'

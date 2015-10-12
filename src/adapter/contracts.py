@@ -99,8 +99,11 @@ class Registry(object):
                     port = 80
             identifier = "%s://%s:%d%s" % (o.scheme, str(ip), port, o.path)
         default = resolver.create_default_service(name, identifier, cs)
+        is_default = False
         if key not in self.identities:
             self.identities[key] = default
+            is_default = True
+        print "service lookup on %s resulted in %s (is default = %r)" % (key, self.identities[key], is_default)
         return self.identities[key]
 
     def lookup_or_create_ghost(self, name, identifier, cs, resolver, my_id):

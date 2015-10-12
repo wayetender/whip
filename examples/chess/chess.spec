@@ -5,8 +5,6 @@ service Chess {
         @identifier gameId,
         @immutable outcome,
         @immutable white,
-        drawOffered, # @mutable
-        moves # @mutable
     }
 
     GetMyGames(username, password)
@@ -17,12 +15,6 @@ service Chess {
             initialize(gameGhost, 'white', game['white'])
             if game['result'] != 'Ongoing':
                 initialize(gameGhost, 'outcome', game['result']);
-    }}
-    @updates {{
-        for game in result:
-            gameGhost = games[game['id']]
-            update(gameGhost, 'drawOffered', game['drawOffered'])
-            update(gameGhost, 'moves', game['moves'])  
     }}
     
     MakeAMove(username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage)

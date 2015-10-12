@@ -2,6 +2,7 @@ import sys
 from util.names import fresh_client_name
 from util.config import get_config
 from util.config import parse_proxy_list
+from util.config import parse_interpreter
 from proxy import LocalRedirector
 import logging
 import pickle
@@ -14,7 +15,6 @@ if __name__ == '__main__':
         print "usage: adapter [adapterconfigfile.yaml]"
         sys.exit(1)
 
-
     config = get_config(sys.argv[1])
     config['proxy_name'] = config.get('proxy_name', fresh_client_name())
     config['redirector_port'] = config.get('redirector_port', 10123)
@@ -25,6 +25,10 @@ if __name__ == '__main__':
     # app-specific setup: contracts
     import contracts
     app = contracts.ContractsProxyApplication(config, redirector)
+
+    for (nm, interpreter) in config.get('interpreters', {}).items():
+        i = parse_interpreter(interpreter)
+        app.register_interpreter(nm, i)
 
     proxies = parse_proxy_list(config.get('server_proxies', []), 'server')
     proxies += parse_proxy_list(config.get('client_proxies', []), 'client')

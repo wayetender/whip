@@ -15,6 +15,7 @@ def help():
     print "Available Commands:"
     print "signup [username] [password]    - Register a new user account"
     print "login [username] [password]     - Login to a user account"
+    print "dumb [h] [p]                    - Perform dumb(h, p) "
     print "add [n1] [n2]                   - Get a random adder and compute n1+n2"
     print "register_adder [host] [port]    - Register new adder service"
     print "quit                            - Exits the program"
@@ -58,6 +59,9 @@ if __name__ == '__main__':
                     adder = get_adder_service(discovery, sid)
                     result = adder.add(int(parts[1]), int(parts[2]))
                     print "%s + %s = %d" % (parts[1], parts[2], result)
+            elif cmd == 'dumb':
+                discovery.dumb(parts[1], int(parts[2]))
+                print "Performed dumb(%s, %s)" % (parts[1], parts[2])
             elif cmd == 'register_adder':
                 if not sid:
                     print "Must login first"

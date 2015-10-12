@@ -45,6 +45,9 @@ class Handler:
         logger.debug("returning random service to %s" % self.sessions[sid])
         return random.choice(self.adders)
 
+    def dumb(self, h, p):
+        logger.debug("dumb(%s, %d)" % (h, p))
+
 if __name__ == '__main__':
     processor = AdderDiscoveryProcessor(Handler())
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 38000

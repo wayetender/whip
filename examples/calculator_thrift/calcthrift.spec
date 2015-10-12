@@ -15,6 +15,9 @@ service AdderDiscovery {
 
     get_adder_info(sid)
     @identifies a:Adder by {{ "%s:%s" % (result.host, result.port) }}
+
+    dumb(host, port)
+    @identifies d:AdderDiscovery by {{ "%s:%s" % (host, port ) }}
 }
 
 service Adder {
