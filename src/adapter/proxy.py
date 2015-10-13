@@ -27,11 +27,17 @@ class ProxyApplication(object):
         self.timeperop = {}
         self.ghostsperop = {}
         self.interpreters = {}
+        self.client_actuals = []
 
     def register_interpreter(self, nm, config):
         self.terminal.register_interpreter(nm, config)
 
     def register_proxy(self, proxy_config):
+        if proxy_config['type'] == 'client':
+            if proxy_config['actual'] in self.client_actuals:
+                return
+            else:
+                self.client_actuals.append(proxy_config['actual'])
         (s, terminus) = self.terminal.generate_terminus(proxy_config)
         if proxy_config['type'] == 'server':
             proxy = ServerProxy(self, s, terminus)
@@ -251,7 +257,6 @@ class Terminal(object):
             return self.ends(s)
 
     def register_interpreter(self, nm, config):
-        print "%s, %s" % (nm, config)
         self.interpreters[nm] = config
 
     def generate_terminus(self, config):
@@ -278,6 +283,7 @@ class CallSite(object):
         self.opname = opname
         self.args = args
         self.result = result
+        self.extra = {}
 
     def __str__(self):
         return "%s :: %s(%s) %s" % (self.service, self.opname, self.args, ("-> %s" % self.result if self.result else ""))
@@ -287,10 +293,12 @@ class CallSite(object):
 
     def deserialize_args(self):
         self.args = [serialization.deserialize_python(arg) for arg in self.args]
+        self.extra = serialization.deserialize_python(self.extra)
 
     def to_thrift_object(self):
         serialized = [serialization.serialize_python(arg) for arg in self.args]
-        return TCallSite(receiver=self.service.get_identity(), op_name=self.opname, arguments=serialized)
+        serialized_extra = serialization.serialize_python(self.extra)
+        return TCallSite(receiver=self.service.get_identity(), op_name=self.opname, arguments=serialized, extra=serialized_extra)
 
 
 class Redirector(object):
@@ -415,10 +423,11 @@ class ClientProxy(object):
             self.service.get_actual_endpoint(), \
             self.terminus.serve_requests(self))
 
-    def on_unproxied_request(self, opname, args):
+    def on_unproxied_request(self, opname, args, extra={}):
         '''returns only the result'''
         start = datetime.datetime.now()
         callsite = CallSite(self.service, opname, args)
+        callsite.extra = extra
         identities = self.app.before_client(callsite)
         if callsite.service.is_proxied():
             proxy = callsite.service.get_proxy_client()
@@ -440,15 +449,17 @@ class ClientProxy(object):
             self.app.ghostsperop[opname] = ghosts
         else:
             self.app.before_server(callsite, identities)
+            pause = datetime.datetime.now()
             callsite.result = self.terminus.execute_request(callsite)
+            resume = datetime.datetime.now()
             identities = self.app.after_server(callsite)
         
         #print "ghosts sent = %d" % len(identities)
         self.app.after_client(callsite, identities)
         stop = datetime.datetime.now()
-        timing = self.app.timeperop.get(opname, [])
+        timing = self.app.timeperop.get((opname, "client"), [])
         timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
-        self.app.timeperop[opname] = timing
+        self.app.timeperop[(opname, "client")] = timing
         return callsite.result
 
 
@@ -490,6 +501,7 @@ class ServerProxy(object):
             start = datetime.datetime.now()
         opname = tcallsite.op_name
         cs = CallSite(self.service, tcallsite.op_name, tcallsite.arguments)
+        cs.extra = tcallsite.extra
         cs.deserialize_args()
         self.app.before_server(cs, identities)
         pause = datetime.datetime.now()
@@ -498,8 +510,8 @@ class ServerProxy(object):
         identities = self.app.after_server(cs)
         #print "ghosts sent = %d" % len(identities)
         stop = datetime.datetime.now()
-        timing = self.app.timeperop.get(opname, [])
+        timing = self.app.timeperop.get((opname, "server"), [])
         timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
-        self.app.timeperop[opname] = timing
+        self.app.timeperop[(opname, "server")] = timing
         return (cs, identities)
 

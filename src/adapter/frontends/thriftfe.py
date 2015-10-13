@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def make_method(self, client_proxy, nm):
     def m(self, *args):
-        result = client_proxy.on_unproxied_request(nm, list(args))
+        result = client_proxy.on_unproxied_request(nm, list(args), extra={'path': THttpSecureServer.lastPath})
         return result
     return m
 
@@ -110,10 +110,12 @@ class ThriftProxyTerminus(ProxyTerminus):
     def execute_request(self, callsite):
         '''returns the result'''
         startTime = datetime.datetime.now()
-        
+        if 'path' not in callsite.extra.keys():
+            raise ValueError('no path set in callsite')
         if self.protocol == 'binary-https':
             import thrift.transport.THttpClient as THttpClient
-            url = "https://%s:%s%s" % (self.host, self.port, THttpSecureServer.lastPath)
+            url = "https://%s:%s%s" % (self.host, self.port, callsite
+                .extra['path'])
             trans = THttpClient.THttpClient(url)
             trans.setCustomHeaders({
                 'User-Agent': "DProxy / 0.1; Python / %s;"

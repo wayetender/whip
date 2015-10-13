@@ -17,7 +17,7 @@ adapter = None
 
 
 def mean(s): 
-    return sum(s) * 1.0 / len(s)
+    return sum(s) * 1.0 / len(s) if len(s) > 0 else 0
 def variance(s): 
     avg = mean(s)
     return math.sqrt(mean(map(lambda x: (x - avg)**2, s)))
@@ -156,25 +156,38 @@ def format_rpc_rttimes():
 
     for k in measurements.keys():
         rttime = mean(measurements[k])
-        msg += "%s\t%f\t%f\n" % (k, rttime, variance(measurements[k]))
+        msg += "%25s\t%f\t%f\n" % (k, rttime, variance(measurements[k]))
 
     return msg
     
 def format_rpc_stats(trials,adapterstats):
     msg = "\nDeacon RPC Counts\n\n"
-    msg += "RPC, Trials, Contract time (ms),stdev,Adapter time (ms),stdev,Inter-adapter traffic (bytes),Total identities (ghosts+services) sent\n"
-    for k in adapterstats['contracts'].keys():
-        contract_time = []
-        adapter_time = []
-        contract_time = []
-        for i in xrange(len(adapterstats['contracts'][k])):
-            if i % 2 == 0:
-                contract_time.append(adapterstats['contracts'][k][i] + adapterstats['contracts'][k][i+1])
-                adapter_time.append(adapterstats['timing'][k][i] + adapterstats['timing'][k][i+1])
+    msg += "RPC, Trials, Precondition time (ms),Postcondition time (ms),stdev,Client Adapter time (ms),Server Adapter time (ms),stdev,Inter-adapter traffic (bytes),Total identities (ghosts+services) sent\n"
+    all_ops = set()
+    for (k, t) in adapterstats['timing']:
+        all_ops.add(k)
+    for k in all_ops:
+        precondition_time = []
+        client_adapter_time = []
+        server_adapter_time = []
+        postcondition_time = []
+        if (k, 'client') in adapterstats['timing'].keys():
+            for i in xrange(len(adapterstats['timing'][(k, 'client')])):
+                client_adapter_time.append(adapterstats['timing'][(k, 'client')][i])
+        if (k, 'server') in adapterstats['timing'].keys():
+            for i in xrange(len(adapterstats['timing'][(k, 'server')])):
+                server_adapter_time.append(adapterstats['timing'][(k, 'server')][i])
+        if (k, 'pre') in adapterstats['contracts'].keys():
+            for i in xrange(len(adapterstats['contracts'][(k, 'pre')])):
+                precondition_time.append(adapterstats['contracts'][(k, 'pre')][i])
+        if (k, 'post') in adapterstats['contracts'].keys():
+            for i in xrange(len(adapterstats['contracts'][(k, 'post')])):
+                postcondition_time.append(adapterstats['contracts'][(k, 'post')][i])
 
-        traffic = sum(adapterstats['traffic'][k]) / len(adapterstats['traffic'][k])
-        ghosts = sum(adapterstats['ghosts'][k]) / len(adapterstats['ghosts'][k])
-        msg += "%s\t%d\t%f\t%f\t%f\t%f\t%d\t%d\n" % (k, trials, mean(contract_time), variance(contract_time), mean(adapter_time), variance(adapter_time), traffic, ghosts)
+
+        traffic = sum(adapterstats['traffic'][k]) / len(adapterstats['traffic'][k]) if k in adapterstats['traffic'] else 0
+        ghosts = sum(adapterstats['ghosts'][k]) / len(adapterstats['ghosts'][k]) if k in adapterstats['ghosts'] else 0
+        msg += "%25s\t\t%d\t%f\t%f\t%f\t%f\t%f\t%f\t%d\t%d\n" % (k, trials, mean(precondition_time), mean(postcondition_time), variance(precondition_time), mean(client_adapter_time), mean(server_adapter_time), variance(client_adapter_time), traffic, ghosts)
     return msg
 
 def setup_adapter(configfile, server, numproxies = 1):

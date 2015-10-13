@@ -20,7 +20,7 @@ def parse_interpreter(item):
     parsed = parser.parse(item)
     if parsed[0] != 'interpreter':
         raise ValueError("parse error %s " % parsed)
-    config = parsed[1]
+    config = parsed[1][1]
     return config
 
 

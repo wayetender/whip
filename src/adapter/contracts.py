@@ -58,7 +58,8 @@ class SpecResolver(object):
         return self.services[name]
 
 class Registry(object):
-    def __init__(self):
+    def __init__(self, app):
+        self.app = app
         self.identities = {}
 
     def lookup_or_create(self, identity, default):
@@ -85,6 +86,8 @@ class Registry(object):
 
     def lookup_or_create_service(self, name, identifier, cs, resolver):
         key = (name, identifier)
+        endpoint = (identifier.rpartition(':')[0], identifier.rpartition(':')[2])
+        fromhttppath = None
         if 'http' in identifier:
             from urlparse import urlparse
             import socket
@@ -97,13 +100,23 @@ class Registry(object):
                     port = 443
                 else:
                     port = 80
+            endpoint = (ip, str(port))
+            fromhttppath = o.path
             identifier = "%s://%s:%d%s" % (o.scheme, str(ip), port, o.path)
         default = resolver.create_default_service(name, identifier, cs)
         is_default = False
         if key not in self.identities:
             self.identities[key] = default
             is_default = True
-        print "service lookup on %s resulted in %s (is default = %r)" % (key, self.identities[key], is_default)
+        if is_default:
+            proxy_config = {
+                'mapsto': name,
+                'actual': endpoint,
+                'type': 'client',
+                'fromhttppath': fromhttppath
+            } 
+            self.app.register_proxy(proxy_config)
+        #print "service lookup on %s resulted in %s (is default = %r)" % (key, self.identities[key], is_default)
         return self.identities[key]
 
     def lookup_or_create_ghost(self, name, identifier, cs, resolver, my_id):
@@ -161,9 +174,9 @@ def check_precondition(proc, env):
                 return (False, "Failed precondition for RPC %s (%s)" % (proc.name, tag.js))
     stop = datetime.datetime.now()
     global timings
-    t = timings.get(proc.name, [])
+    t = timings.get((proc.name, "pre"), [])
     t.append((stop - start).total_seconds() * 1000)
-    timings[proc.name] = t
+    timings[(proc.name, "pre")] = t
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
 
@@ -182,9 +195,9 @@ def check_postcondition(proc, env):
                 return (False, "Failed postcondition %s" % tag.js)
     stop = datetime.datetime.now()
     global timings
-    t = timings.get(proc.name, [])
+    t = timings.get((proc.name, "post"), [])
     t.append((stop - start).total_seconds() * 1000)
-    timings[proc.name] = t
+    timings[(proc.name, "post")] = t
     #print "contract time = %f" % ((stop - start).total_seconds() * 1000)
     return (True, "")
 
@@ -219,7 +232,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             raise ValueError("spec must be in proxy config")
         self.resolver = SpecResolver(config['spec'])
         self.terminal = ContractsTerminal(self.resolver)
-        self.registry = Registry()
+        self.registry = Registry(self)
 
     def register_proxy(self, proxy_config):
         super(ContractsProxyApplication, self).register_proxy(proxy_config)
@@ -247,7 +260,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     identifier = str(eval_code(env, tag.expr))
                     ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver, identity)
                     items.append((tag.name, ghost))
-        return items
+        #return items
+        return []
 
     def process_updates(self, env, ghosts, callsite, rpc):
         for tag in rpc.tags:

@@ -16,6 +16,14 @@ enum IdentityAttributeType {
     PROXY_INFO = 2,
 }
 
+struct PortConfiguration {
+    1: string actual_host;
+    2: int actual_port;
+    3: optional string proxy_host;
+    4: optional int proxy_port;
+    5: list<string> blame_labels;
+}
+
 struct Identity {
     1: IdentityType id_type;
     2: string name;
@@ -32,6 +40,7 @@ struct IdentityAttribute {
 struct Annotated {
     1: blob original_payload;
     2: list<IdentityAttribute> identity_attributes;
+    3: list<PortConfiguration> port_configurations;
 }
 
 
@@ -40,6 +49,7 @@ struct CallSite {
     1: Identity receiver;
     2: string op_name;
     3: list<string> arguments;
+    4: blob extra;
 }
 
 struct StateVar {

@@ -19,7 +19,7 @@ def run_sharednotes(host):
     # for n in notebooks:
     #     print n.name
 
-    noteStore = client.get_note_store()
+    noteStore = test_utils.measure('getNoteStoreUrl', lambda: client.get_note_store())
     test_utils.track_traffic(noteStore._client, tracker)
     sharedNotebooks = test_utils.measure('listLinkedNotebooks', lambda: noteStore.listLinkedNotebooks())
     for sharedNotebook in sharedNotebooks:
@@ -43,14 +43,14 @@ def run_sharednotes(host):
 #run_sharednotes(host)
 
 if __name__ == '__main__':
-    NUM_TRIALS = 100
+    NUM_TRIALS = 1
     import mockevernoteserver
-    mockevernoteserver.start_all()
+    #mockevernoteserver.start_all()
     time.sleep(1.0)
     print "starting %d trials..." % NUM_TRIALS
     report = []
     for trial in xrange(NUM_TRIALS):
-        test_utils.setup_adapter_only('adapter.yaml', 2)()
+        test_utils.setup_adapter_only('adapter.yaml', 1)()
         (traffic, stopwatch) = run_sharednotes(host)
         stats = test_utils.get_adapter_stats()
         report.append((traffic, stopwatch, stats))

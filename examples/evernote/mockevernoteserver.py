@@ -32,7 +32,7 @@ class Handler2(NoteStore.Iface):
 
     def listLinkedNotebooks(self, authToken):
         time.sleep(.451)
-        ln = LinkedNotebook(guid='guid0', noteStoreUrl='https://localhost:9444/')
+        ln = LinkedNotebook(guid='guid0', shareKey='asd', noteStoreUrl='https://localhost:9444/')
         return [ln]
 
     def getSharedNotebookByAuth(self, authToken):

@@ -1,14 +1,9 @@
 
-ghost Session {
-    @identifier sid,
-    @immutable username
-}
-
 service AdderDiscovery {
 
     login(username, password)
-    @identifies s:Session by {{ result }}
-    @initializes s.username to {{ username }}
+    # @identifies s:Session by {{ result }}
+    # @initializes s.username to {{ username }}
 
     register_adder(sid, host, port)
     @identifies a:Adder by {{ "%s:%d" % (host, port) }}
