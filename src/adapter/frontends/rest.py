@@ -14,8 +14,9 @@ log.setLevel(logging.ERROR)
 
 
 class RestProxyTerminus(ProxyTerminus):
-    def __init__(self, hostname):
-        self.hostname = hostname
+    def __init__(self, ip, port):
+        self.actual_ip = ip
+        self.actual_port = port
 
     def serve_requests(self, client_proxy, endpoint = None):
         '''returns: endpoint it is listening on'''
@@ -50,7 +51,7 @@ class RestProxyTerminus(ProxyTerminus):
         return ('127.0.0.1', port)
 
     def execute_request(self, callsite):
-        apath = 'https://%s%s' % (self.hostname, callsite.opname)
+        apath = 'https://%s:%s%s' % (callsite.args[0]['headers']['Host'], self.actual_port, callsite.opname)
         nrequest = urllib2.Request(apath)
         for (header, v) in callsite.args[0]['headers'].items():
             if header == 'Content-Length' or header == 'Accept-Encoding': continue
@@ -68,10 +69,8 @@ class RestProxyTerminus(ProxyTerminus):
 def generate(config, terminal, serviceconfig):
     if 'mapsto' not in serviceconfig:
         raise ValueError("mapstoservice must be set")
-    if 'hostname' not in config:
-        raise ValueError('hostname must be set')
     (ip, port) = serviceconfig['actual']
     frompath = serviceconfig.get('fromhttppath', None)
-    return RestProxyTerminus(config['hostname'])
+    return RestProxyTerminus(ip, port)
 
     

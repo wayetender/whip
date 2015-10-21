@@ -2,7 +2,7 @@ name: twitter-adapter
 redirector_port: 9090
 spec: twitter.spec
 interpreters:
-  TwitterTweets: rest(hostname='api.twitter.com')
+  TwitterTweets: rest()
 server_proxies:
   - 199.16.156.*:443 proxiedby 127.0.0.1:8001 mapstoservice TwitterTweets
 client_proxies:
