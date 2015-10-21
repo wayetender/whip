@@ -10,7 +10,7 @@ import threading
 
 import logging
 log = logging.getLogger('werkzeug')
-#log.setLevel(logging.ERROR)
+log.setLevel(logging.ERROR)
 
 
 class RestProxyTerminus(ProxyTerminus):
@@ -41,7 +41,6 @@ class RestProxyTerminus(ProxyTerminus):
             for (header, v) in result['headers'].items():
                 if header == 'content-length': continue
                 resp.headers[header] = v
-                print "]] %s -- %s" % (header, v)
             return resp
 
         self.app.add_url_rule("/<path:p>", 'handle', handle)
@@ -55,12 +54,10 @@ class RestProxyTerminus(ProxyTerminus):
         nrequest = urllib2.Request(apath)
         for (header, v) in callsite.args[0]['headers'].items():
             if header == 'Content-Length' or header == 'Accept-Encoding': continue
-            print "%s -- %s" % (header, v)
             nrequest.add_header(header, v)
         proxy_resp = urllib2.urlopen(nrequest)
         body = proxy_resp.read()
         code = proxy_resp.getcode()
-        print code
         res = {
             'headers': dict(proxy_resp.info()),
             'body': json.loads(body),
