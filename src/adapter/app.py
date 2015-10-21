@@ -16,7 +16,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     config = get_config(sys.argv[1])
-    config['proxy_name'] = config.get('proxy_name', fresh_client_name())
+    config['proxy_name'] = config.get('name', fresh_client_name())
     config['redirector_port'] = config.get('redirector_port', 10123)
 
     # set up port redirector
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     proxies += parse_proxy_list(config.get('client_proxies', []), 'client')
 
     for proxy_config in proxies:
-        app.register_proxy(proxy_config)
+        app.register_proxy(proxy_config, config['proxy_name'])
 
     REDIRECTOR_BYTESIZE = 59
     try:

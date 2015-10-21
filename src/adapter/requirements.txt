@@ -1,10 +1,13 @@
+Flask==0.10.1
+itsdangerous==0.24
+Jinja2==2.8
+lxml==3.3.5
 Mako==0.9.0
 MarkupSafe==0.18
-PyYAML==3.11
-lxml==3.3.5
 ply==3.4
 pytz==2014.4
+PyYAML==3.11
 spyne==2.10.10
 suds-jurko==0.6
 thrift==0.9.1
-wsgiref==0.1.2
+Werkzeug==0.10.4

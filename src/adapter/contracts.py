@@ -115,7 +115,7 @@ class Registry(object):
                 'type': 'client',
                 'fromhttppath': fromhttppath
             } 
-            self.app.register_proxy(proxy_config)
+            self.app.register_proxy(proxy_config, self.app.name)
         #print "service lookup on %s resulted in %s (is default = %r)" % (key, self.identities[key], is_default)
         return self.identities[key]
 
@@ -202,20 +202,30 @@ def check_postcondition(proc, env):
     return (True, "")
 
 class ContractService(proxy.Service):
-    def __init__(self, proxy_endpoint, actual_endpoint, service_decl):
+    def __init__(self, proxy_endpoint, actual_endpoint, service_decl, blame_label):
         super(ContractService, self).__init__(proxy_endpoint, actual_endpoint, service_decl.name)
         self.decl = service_decl
+        self.blame_labels = blame_label
+
+    def __str__(self):
+        if self.is_proxied():
+            return '%s <%s> proxiedby %s' % (self.overridden_id, self.blame_labels, self.proxy_endpoint)
+        else:
+            return 'unproxied %s <%s>' % (self.overridden_id,self.blame_labels)
+
 
 class ContractsTerminal(proxy.Terminal):
     def __init__(self, resolver):
         super(ContractsTerminal, self).__init__()
         self.resolver = resolver
+        self.endpoint_to_services = {}
 
-    def generate_terminus(self, config):
+    def generate_terminus(self, config, blame_label):
         (service, terminus) = super(ContractsTerminal, self).generate_terminus(config)
         assert 'mapsto' in config
         service_decl = self.resolver.resolve_service(config['mapsto'])
-        s = ContractService(service.proxy_endpoint, service.actual_endpoint, service_decl)
+        s = ContractService(service.proxy_endpoint, service.actual_endpoint, service_decl, blame_label)
+        self.endpoint_to_services[config['actual']] = s
         return (s, terminus)
 
 
@@ -233,9 +243,29 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         self.resolver = SpecResolver(config['spec'])
         self.terminal = ContractsTerminal(self.resolver)
         self.registry = Registry(self)
+        self.name = config['proxy_name']
 
-    def register_proxy(self, proxy_config):
-        super(ContractsProxyApplication, self).register_proxy(proxy_config)
+    def register_proxy(self, proxy_config, blame_label):
+        if proxy_config['type'] == 'client':
+            if proxy_config['actual'] in self.client_actuals:
+                return
+            else:
+                self.client_actuals.append(proxy_config['actual'])
+        (s, terminus) = self.terminal.generate_terminus(proxy_config, blame_label)
+        if proxy_config['type'] == 'server':
+            p = proxy.ServerProxy(self, s, terminus)
+            self.server_proxies.append(p)
+            terminus.set_proxy(p)
+            p.accept_proxied_requests()
+            return p
+        elif proxy_config['type'] == 'client':
+            p = proxy.ClientProxy(self, s, terminus)
+            self.client_proxies.append(p)
+            terminus.set_proxy(p)
+            p.accept_unproxied_requests()
+            return p
+        else:
+            raise ValueError("unknown proxy type: %s" % proxy_config['type'])
 
     def compute_references(self, callsite, rpc):
         identity = callsite.service.get_identity()
@@ -260,8 +290,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     identifier = str(eval_code(env, tag.expr))
                     ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver, identity)
                     items.append((tag.name, ghost))
-        #return items
-        return []
+        return items
 
     def process_updates(self, env, ghosts, callsite, rpc):
         for tag in rpc.tags:

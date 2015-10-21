@@ -19,6 +19,11 @@ class ProxyTerminus(object):
 
 import soap
 import thriftfe
-protocols = { 'soap': soap.generate, 'thrift': thriftfe.generate } 
+import rest
+protocols = { 
+    'soap': soap.generate, 
+    'thrift': thriftfe.generate, 
+    'rest': rest.generate,
+} 
 
 __all__ = ['ProxyTerminus', 'protocols']

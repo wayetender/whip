@@ -101,7 +101,6 @@ class Attribute(object):
     def to_thrift_object(self):
         pass
 
-
 class CallSiteSet(Attribute):
     def __init__(self, id, cs):
         super(CallSiteSet, self).__init__(id)
@@ -344,7 +343,13 @@ class LocalRedirector(Redirector):
         #if actual_endpoint in self.redirections:
         #    raise ValueError("already redirecting %s" % (actual_endpoint,))
         logger.info("Registering proxy endpoint %s for actual endpoint %s" % (proxy_endpoint, actual_endpoint))
-        self.redirections[actual_endpoint] = proxy_endpoint
+        if '*' in actual_endpoint[0]:
+            p = actual_endpoint[1]
+            for i in xrange(0,255):
+                h = actual_endpoint[0].replace('*', str(i))
+                self.redirections[(h,p)] = proxy_endpoint
+        else:
+            self.redirections[actual_endpoint] = proxy_endpoint
 
     def get_redirection_port(self, endpoint):
         self.requests += 1
@@ -429,6 +434,8 @@ class ClientProxy(object):
         callsite = CallSite(self.service, opname, args)
         callsite.extra = extra
         identities = self.app.before_client(callsite)
+        if isinstance(identities, tuple):
+            pass
         if callsite.service.is_proxied():
             proxy = callsite.service.get_proxy_client()
             tracker = track_traffic(proxy)

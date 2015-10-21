@@ -135,7 +135,7 @@ t_RPAREN        = r'\)'
 t_COLON         = r':'
 
 # Literals
-t_IP            = r'[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?'
+t_IP            = r'[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.([0-9][0-9]?[0-9]?|\*)'
 t_INTEGER       = r'-?[1-9][0-9]*'
 t_DECIMAL       = t_INTEGER + r'\.[0-9]*'
 
@@ -162,7 +162,7 @@ def t_TAG_FULL(t):
     return t
 
 def t_IDENTIFIER(t):
-    r'[a-zA-Z_][a-zA-Z_0-9_]*'
+    r'[a-zA-Z_\/][a-zA-Z_0-9_\/\.]*'
     t.type = reserved.get(t.value, 'IDENTIFIER')
     if t.value == 'true' or t.value == 'false':
         t.type = 'BOOLEAN'
