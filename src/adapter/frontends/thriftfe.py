@@ -22,43 +22,59 @@ def make_method(self, client_proxy, nm):
         return result
     return m
 
+cache = {}
+
+def cache_stubs(service, idl, ns):
+    d = tempfile.mkdtemp()
+    deleted = False
+    idl = os.path.join(os.getcwd(), idl)
+    try:
+        logger.debug("generating thrift stubs in %s for IDL %s", d, idl)
+        res = subprocess.call(["thrift", "-r", "--gen", "py", "-out", d, idl])
+        if res != 0:
+            raise ValueError("thrift could not generate appropriate stubs")
+        sys.path.append(d)
+        mname = "%s.%s" % (ns, service)
+        splits = ns.split('.')
+        accum = ''
+        for s in splits:
+            accum += s
+            m = importlib.import_module(accum)
+            reload(m)
+            accum += '.'
+        m = importlib.import_module(mname)
+        shutil.rmtree(d)
+        sys.path.remove(d)
+        deleted = True
+        iface = getattr(m, 'Iface')
+        ClientCls = getattr(m, 'Client')
+        ProcessorCls = getattr(m, 'Processor')
+    
+        cache[service] = {
+            'iface': iface,
+            'ClientCls': ClientCls,
+            'ProcessorCls': ProcessorCls
+        }
+    finally:
+        if not deleted:
+            shutil.rmtree(d)
+
+    
 class ThriftProxyTerminus(ProxyTerminus):
     allendpoints = {}
     def __init__(self, idl, ns, service, host, port, protocol, transport, frompath):
-        self.idl = idl
-        d = tempfile.mkdtemp()
-        deleted = False
-        idl = os.path.join(os.getcwd(), idl)
-        try:
-            logger.debug("generating thrift stubs in %s for IDL %s", d, idl)
-            res = subprocess.call(["thrift", "-r", "--gen", "py", "-out", d, idl])
-            if res != 0:
-                raise ValueError("thrift could not generate appropriate stubs")
-            sys.path.append(d)
-            mname = "%s.%s" % (ns, service)
-            self.servicename = service
-            splits = ns.split('.')
-            accum = ''
-            for s in splits:
-                accum += s
-                m = importlib.import_module(accum)
-                reload(m)
-                accum += '.'
-            m = importlib.import_module(mname)
-            shutil.rmtree(d)
-            sys.path.remove(d)
-            deleted = True
-            self.iface = getattr(m, 'Iface')
-            self.ClientCls = getattr(m, 'Client')
-            self.ProcessorCls = getattr(m, 'Processor')
-            self.host = host
-            self.port = port
-            self.frompath = frompath
-        finally:
-            if not deleted:
-                shutil.rmtree(d)
+        if service not in cache:
+            raise ValueError('service %s not in cache' % service)
+        cache_info = cache[service]
+        self.iface = cache_info['iface']
+        self.ClientCls = cache_info['ClientCls']
+        self.ProcessorCls = cache_info['ProcessorCls']
         self.transport = transport
         self.protocol = protocol
+        self.frompath = frompath
+        self.servicename = service
+        self.host = host
+        self.port = port
     
     def set_proxy(self, proxy):
         if self.protocol == 'binary-https':
@@ -148,3 +164,17 @@ def generate(config, terminal, serviceconfig):
     (ip, port) = serviceconfig['actual']
     frompath = serviceconfig.get('fromhttppath', None)
     return ThriftProxyTerminus(config['idl'], config['ns'], serviceconfig['mapsto'], ip, port, config['protocol'], config.get('transport', None), frompath)
+
+def setup_config(nm, config):
+    if 'idl' not in config:
+        raise ValueError("idl param must be set")
+    if 'ns' not in config:
+        raise ValueError("ns param must be set")
+    if 'protocol' not in config:
+        raise ValueError("protocol param must be set")
+    if 'transport' not in config and config['protocol'] != 'binary-https':
+        raise ValueError("transport param must be set")
+
+    cache_stubs(nm, config['idl'], config['ns'])
+
+generate.setup_config = setup_config

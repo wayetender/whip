@@ -45,7 +45,7 @@ def run_sharednotes(host):
 if __name__ == '__main__':
     NUM_TRIALS = 1
     import mockevernoteserver
-    #mockevernoteserver.start_all()
+    mockevernoteserver.start_all()
     time.sleep(1.0)
     print "starting %d trials..." % NUM_TRIALS
     report = []

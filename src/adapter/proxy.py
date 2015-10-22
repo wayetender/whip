@@ -257,6 +257,9 @@ class Terminal(object):
 
     def register_interpreter(self, nm, config):
         self.interpreters[nm] = config
+        generator = frontends.protocols[config[0]]
+        if hasattr(generator, 'setup_config'):
+            generator.setup_config(nm, config[1])
 
     def generate_terminus(self, config):
         s = Service(config.get('proxiedby', None), config['actual'])

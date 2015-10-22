@@ -4,9 +4,9 @@ spec: twitter.spec
 interpreters:
   TwitterTweets: rest()
 server_proxies:
-  - 199.16.156.*:443 proxiedby 127.0.0.1:8001 mapstoservice TwitterTweets
+  - 199.16.156.*:443 proxiedby 127.0.0.1:8123 mapstoservice TwitterTweets
 client_proxies:
-  - 199.16.156.*:443 mapstoservice TwitterTweets
+  - 199.16.156.*:443 proxiedby 127.0.0.1:8123 mapstoservice TwitterTweets
 
 
 
