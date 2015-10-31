@@ -26,8 +26,9 @@ def parse_interpreter(item):
 
 def parse_proxy_list(lst, t):
     proxies = []
-    for item in lst:
-        proxies.append(parse_proxy(item, t))
+    if lst:
+        for item in lst:
+            proxies.append(parse_proxy(item, t))
     return proxies
 
 

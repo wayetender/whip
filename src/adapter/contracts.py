@@ -104,18 +104,8 @@ class Registry(object):
             fromhttppath = o.path
             identifier = "%s://%s:%d%s" % (o.scheme, str(ip), port, o.path)
         default = resolver.create_default_service(name, identifier, cs)
-        is_default = False
         if key not in self.identities:
             self.identities[key] = default
-            is_default = True
-        if is_default:
-            proxy_config = {
-                'mapsto': name,
-                'actual': endpoint,
-                'type': 'client',
-                'fromhttppath': fromhttppath
-            } 
-            self.app.register_proxy(proxy_config, self.app.name)
         #print "service lookup on %s resulted in %s (is default = %r)" % (key, self.identities[key], is_default)
         return self.identities[key]
 
@@ -205,13 +195,18 @@ class ContractService(proxy.Service):
     def __init__(self, proxy_endpoint, actual_endpoint, service_decl, blame_label):
         super(ContractService, self).__init__(proxy_endpoint, actual_endpoint, service_decl.name)
         self.decl = service_decl
+        if type(blame_label) != list:
+            blame_label = [blame_label]
         self.blame_labels = blame_label
+
+    def __repr__(self):
+        return str(self)
 
     def __str__(self):
         if self.is_proxied():
-            return '%s <%s> proxiedby %s' % (self.overridden_id, self.blame_labels, self.proxy_endpoint)
+            return '%s {%s} proxiedby %s' % (self.overridden_id, self.blame_labels, self.proxy_endpoint)
         else:
-            return 'unproxied %s <%s>' % (self.overridden_id,self.blame_labels)
+            return 'unproxied %s {%s}' % (self.overridden_id,self.blame_labels)
 
 
 class ContractsTerminal(proxy.Terminal):
@@ -226,6 +221,8 @@ class ContractsTerminal(proxy.Terminal):
         service_decl = self.resolver.resolve_service(config['mapsto'])
         s = ContractService(service.proxy_endpoint, service.actual_endpoint, service_decl, blame_label)
         self.endpoint_to_services[config['actual']] = s
+        if hasattr(service, 'overridden_id'):
+            s.overridden_id = service.overridden_id
         return (s, terminus)
 
 
@@ -246,31 +243,35 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         self.name = config['proxy_name']
 
     def register_proxy(self, proxy_config, blame_label):
+        identifier = "%s:%s" % (proxy_config['actual']) if 'identifier' not in proxy_config else proxy_config['identifier']
+        (_,s) = self.lookup_service(identifier)
+        if s:
+            if type(s) != list and s.service_name == proxy_config['mapsto']:
+                if blame_label not in s.blame_labels:
+                    print "--- merging blame label %s in with %s" % (blame_label, s)
+                    s.blame_labels.append(blame_label)
+            else:
+                print "--- conflict merge on %s" % (proxy_config,)
+                (sp, _) = self.terminal.generate_terminus(proxy_config, blame_label)
+                self.services.append(sp)
+                return
+
         if proxy_config['type'] == 'client':
             if proxy_config['actual'] in self.client_actuals:
                 return
             else:
                 self.client_actuals.append(proxy_config['actual'])
         (s, terminus) = self.terminal.generate_terminus(proxy_config, blame_label)
-        if proxy_config['type'] == 'server':
-            p = proxy.ServerProxy(self, s, terminus)
-            self.server_proxies.append(p)
-            terminus.set_proxy(p)
-            p.accept_proxied_requests()
-            return p
-        elif proxy_config['type'] == 'client':
-            p = proxy.ClientProxy(self, s, terminus)
-            self.client_proxies.append(p)
-            terminus.set_proxy(p)
-            p.accept_unproxied_requests()
-            return p
-        else:
-            raise ValueError("unknown proxy type: %s" % proxy_config['type'])
+        s.proxy_type = proxy_config['type']
+        if 'fromhttppath' in proxy_config:
+            s.fromhttppath = proxy_config['fromhttppath']
+        return self.register_service(s, terminus)
 
     def compute_references(self, callsite, rpc):
         identity = callsite.service.get_identity()
-        service = self.registry.lookup_or_create(identity, proxy.CallSiteSet(identity, callsite.to_thrift_object()))
-        items = [('receiver', service)]
+        #service = self.registry.lookup_or_create(identity, proxy.CallSiteSet(identity, callsite.to_thrift_object()))
+        #items = [('receiver', service)]
+        items = []
         env = dict(zip(rpc.formals, callsite.args) + [('result', callsite.result)])
         for tag in rpc.tags:
             if isinstance(tag, IdentifiesTag):
@@ -346,6 +347,30 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             else:
                 self.registry.update(attribute.identity, attribute)
 
+    def generate_proxy_config(self, name, identifier):
+        fromhttppath = None
+        if 'http' in identifier:
+            from urlparse import urlparse
+            import socket
+            o = urlparse(identifier)
+            h = o.netloc.split(':')[0]
+            ip = socket.gethostbyname_ex(h)[2][0]
+            port = o.port
+            if not port:
+                if o.scheme == 'https':
+                    port = 443
+                else:
+                    port = 80
+            endpoint = (ip, str(port))
+            fromhttppath = o.path
+            identifier = "%s://%s:%d%s" % (o.scheme, str(ip), port, o.path)
+        return {
+            'mapsto': name,
+            'actual': endpoint,
+            'type': 'client',
+            'fromhttppath': fromhttppath,
+            'identifier': identifier
+        } 
 
     def to_js(self, refs):
         items = []
@@ -396,17 +421,18 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             rpc = callsite.service.decl.rpcs[callsite.opname]
             assert len(rpc.formals) == len(callsite.args)
             references = self.compute_references(callsite, rpc)
+            proxies = []
             references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
             env = dict(zip(rpc.formals, callsite.args) + references2)
             #(res, msg) = check_precondition(rpc, env)
             #if not res:
             #    report_error(self.registry, msg, references)
-            return self.flatten([v for (k, v) in references])
+            return ([], proxies)
         else:
             logger.warn("unknown op: %s" % callsite.opname)
             return super(ContractsProxyApplication, self).before_client(callsite)
 
-    def before_server(self, callsite, client_attributes):
+    def before_server(self, callsite, client_attributes, proxies=[]):
         #logger.debug("before server: %s", callsite)
         self.merge_attributes(client_attributes)
         if callsite.opname not in callsite.service.decl.rpcs:
@@ -428,6 +454,20 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             rpc = callsite.service.decl.rpcs[callsite.opname]
             assert len(rpc.formals) == len(callsite.args)
             references = self.compute_references(callsite, rpc)
+            proxies = []
+            for r in references:
+                if isinstance(r[1], proxy.Attribute):
+                    (_, s) = self.lookup_service(r[1].identity.identifier)
+                    if not s:
+                        proxy_config = self.generate_proxy_config(r[1].identity.name, r[1].identity.identifier)
+                        print "<-- registering locally %s" % (proxy_config,)
+                        self.register_proxy(proxy_config, self.name)
+            for r in references:
+                if isinstance(r[1], proxy.Attribute):
+                    (should_forward, s) = self.lookup_service(r[1].identity.identifier)
+                    if should_forward:
+                        print "<-- forwarding %s" % (s,)
+                        proxies.append(s)
             self.unfreshen([v for (k, v) in references])
             references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
             #if isinstance(callsite.result, suds.sax.text.Text):
@@ -444,13 +484,14 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             #(res, msg) = check_postcondition(rpc, env)
             #if not res:
             #    report_error(self.registry, msg, references)
-            return self.flatten([v for (k, v) in references])
+            #return self.flatten([v for (k, v) in references])
+            return ([], proxies)
         else:
             logger.debug("unknown op: %s" % callsite.opname)
             return super(ContractsProxyApplication, self).after_server(callsite)
         return super(ContractsProxyApplication, self).after_server(callsite)
 
-    def after_client(self, callsite, server_attributes):
+    def after_client(self, callsite, server_attributes, proxies=[]):
         #logger.debug("after client: %s", callsite)
         self.merge_attributes(server_attributes)
         if callsite.opname not in callsite.service.decl.rpcs:
@@ -458,6 +499,22 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             return
         rpc = callsite.service.decl.rpcs[callsite.opname]
         references = self.compute_references(callsite, rpc)
+        for r in references:
+            if isinstance(r[1], proxy.Attribute):
+                (_, s) = self.lookup_service(r[1].identity.identifier)
+                imported = False
+                for p in proxies:
+                    if p.identifier == r[1].identity.identifier:
+                        print "<-- importing %s" % p
+                        imported = True
+                        proxy_config = self.generate_proxy_config(r[1].identity.name, r[1].identity.identifier)
+                        if p.proxy_host:
+                            proxy_config['proxiedby'] = (p.proxy_host, p.proxy_port)
+                        self.register_proxy(proxy_config, p.blame_labels)
+                if not imported:
+                    proxy_config = self.generate_proxy_config(r[1].identity.name, r[1].identity.identifier)
+                    print "<-- registering locally %s" % (proxy_config,)
+                    self.register_proxy(proxy_config, self.name)
         assert len(rpc.formals) == len(callsite.args)
         if isinstance(callsite.result, suds.sax.text.Text):
             callsite.result = str(callsite.result)

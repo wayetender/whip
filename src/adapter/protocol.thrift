@@ -17,11 +17,10 @@ enum IdentityAttributeType {
 }
 
 struct PortConfiguration {
-    1: string actual_host;
-    2: int actual_port;
-    3: optional string proxy_host;
-    4: optional int proxy_port;
-    5: list<string> blame_labels;
+    1: string identifier;
+    2: optional string proxy_host;
+    3: optional int proxy_port;
+    4: list<string> blame_labels;
 }
 
 struct Identity {

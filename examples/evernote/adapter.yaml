@@ -8,8 +8,10 @@ server_proxies:
   - 127.0.0.1:9444 fromhttppath '/' proxiedby 127.0.0.1:9441 mapstoservice NoteStore
   - 127.0.0.1:9443 fromhttppath '/' proxiedby 127.0.0.1:9442 mapstoservice UserStore
 client_proxies:
-  - 127.0.0.1:9444 fromhttppath '/' proxiedby 127.0.0.1:9441 mapstoservice NoteStore
-  - 127.0.0.1:9443 fromhttppath '/' proxiedby 127.0.0.1:9442 mapstoservice UserStore
+  # - 127.0.0.1:9444 fromhttppath '/' proxiedby 127.0.0.1:9441 mapstoservice NoteStore
+  # - 127.0.0.1:9443 fromhttppath '/' proxiedby 127.0.0.1:9442 mapstoservice UserStore
+  - 127.0.0.1:9444 fromhttppath '/' mapstoservice NoteStore
+  - 127.0.0.1:9443 fromhttppath '/' mapstoservice UserStore
 
 
 

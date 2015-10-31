@@ -4,7 +4,7 @@ import logging
 from protocol.clientprotocol.ttypes import RedirectionInfo
 from protocol.clientprotocol import Redirection
 from protocol import Proxy
-from protocol.ttypes import Identity, Annotated, IdentityType, IdentityAttribute, IdentityAttributeType, StateVar, StateVarsAttribute, CallSiteSetAttribute
+from protocol.ttypes import Identity, Annotated, IdentityType, IdentityAttribute, IdentityAttributeType, StateVar, StateVarsAttribute, CallSiteSetAttribute, PortConfiguration
 from protocol.ttypes import CallSite as TCallSite
 from util import thriftutil
 import datetime
@@ -25,12 +25,32 @@ class ProxyApplication(object):
         self.redirector = redirector
         self.bytesperop = {}
         self.timeperop = {}
+        self.services = []
         self.ghostsperop = {}
         self.interpreters = {}
         self.client_actuals = []
 
     def register_interpreter(self, nm, config):
         self.terminal.register_interpreter(nm, config)
+
+    def lookup_service(self, identifier):
+        res = []
+        for s in self.services:
+            if s.overridden_id == identifier:
+                res.append(s)
+        if len(res) == 0:
+            return (False, None)
+        if len([s for s in res if s.service_name == res[0].service_name]) != len(res):
+            return (False, res)
+        candidate = res[0]
+        for s in res:
+            if s.proxy_type == 'server':
+                candidate = s
+        return (True, candidate)
+
+    def in_conflict(self, identifier):
+        (is_ok, _) = self.lookup_service(identifier)
+        return not is_ok
 
     def register_proxy(self, proxy_config):
         if proxy_config['type'] == 'client':
@@ -39,13 +59,18 @@ class ProxyApplication(object):
             else:
                 self.client_actuals.append(proxy_config['actual'])
         (s, terminus) = self.terminal.generate_terminus(proxy_config)
-        if proxy_config['type'] == 'server':
+        s.proxy_type = proxy_config['type']
+        return self.register_service(s, terminus)
+
+    def register_service(self, s, terminus):
+        self.services.append(s)
+        if s.proxy_type == 'server':
             proxy = ServerProxy(self, s, terminus)
             self.server_proxies.append(proxy)
             terminus.set_proxy(proxy)
             proxy.accept_proxied_requests()
             return proxy
-        elif proxy_config['type'] == 'client':
+        elif s.proxy_type == 'client':
             proxy = ClientProxy(self, s, terminus)
             self.client_proxies.append(proxy)
             terminus.set_proxy(proxy)
@@ -60,7 +85,7 @@ class ProxyApplication(object):
         return []
 
     @abc.abstractmethod
-    def before_server(self, callsite, client_attributes):
+    def before_server(self, callsite, client_attributes, proxies=[]):
         logger.debug("before_server %s %s" % (callsite, client_attributes))
         pass
 
@@ -70,7 +95,7 @@ class ProxyApplication(object):
         return []
 
     @abc.abstractmethod
-    def after_client(self, callsite, server_attributes):
+    def after_client(self, callsite, server_attributes, proxies=[]):
         logger.debug("after_client %s %s" % (callsite, server_attributes))
         pass
 
@@ -231,6 +256,18 @@ class Service(object):
     def get_identity(self):
         return Identity(id_type=IdentityType.SERVICE, name=self.service_name, identifier='%s' % self.overridden_id)
 
+    def to_thrift_object(self):
+        (proxy_host, proxy_port) = self.proxy_endpoint if self.is_proxied() else (None, None)
+        if proxy_port:
+            proxy_port = int(proxy_port)
+        blame_labels = self.blame_labels if hasattr(self, 'blame_labels') else None
+        return PortConfiguration(
+            identifier=self.overridden_id, 
+            proxy_host=proxy_host,
+            proxy_port=proxy_port,
+            blame_labels=blame_labels,
+        )
+
     def __str__(self):
         if self.is_proxied():
             return '%s proxiedby %s' % (self.overridden_id, self.proxy_endpoint)
@@ -248,7 +285,7 @@ class Terminal(object):
     def __init__(self):
         self.ends = {}
         self.interpreters = {}
-
+    
     def get_terminus(self, s):
         if s not in self.ends:
             raise ValueError('no terminus for service at %s' % s)
@@ -263,6 +300,8 @@ class Terminal(object):
 
     def generate_terminus(self, config):
         s = Service(config.get('proxiedby', None), config['actual'])
+        if 'identifier' in config:
+            s.overridden_id = config['identifier']
         if s not in self.ends:
             if 'using' in config:
                 interpreter = config['using'][0]
@@ -394,6 +433,10 @@ def thrift_map_to_identities(mapping):
             raise ValueError("unknown attribute type: %s" % attribute.value_type)
     return attributes
 
+def proxies_to_thrift(proxies):
+    return [s.to_thrift_object() for s in proxies]
+
+
 class UsageTracker:
     def __init__(self):
         self.bytestx = 0
@@ -436,36 +479,47 @@ class ClientProxy(object):
         start = datetime.datetime.now()
         callsite = CallSite(self.service, opname, args)
         callsite.extra = extra
+        if self.app.in_conflict(self.service.overridden_id):
+            logger.warn("%s is in conflict with %s; short-circuiting", self.service, self.app.lookup_service(self.service.overridden_id)[1])
+            return self.terminus.execute_request(callsite)
+        
         identities = self.app.before_client(callsite)
+        proxies = []
         if isinstance(identities, tuple):
-            pass
+            (identities, proxies) = identities
+        proxies = proxies_to_thrift(proxies)
         if callsite.service.is_proxied():
             proxy = callsite.service.get_proxy_client()
             tracker = track_traffic(proxy)
             payload = serialization.SerializeThriftMsg(callsite.to_thrift_object())
-            v1 = len(identities)
-            request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities))
+            v1 = len(identities) + len(proxies)
+            request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies)
             pause = datetime.datetime.now()
             annotated_res = proxy.execute(request)
             resume = datetime.datetime.now()
             identity_attributes = annotated_res.identity_attributes
             identities = thrift_map_to_identities(identity_attributes)
+            proxies = annotated_res.port_configurations
             callsite.result = serialization.deserialize_python(annotated_res.original_payload)
             traffic = self.app.bytesperop.get(opname, [])
             traffic.append(tracker.bytesrx + tracker.bytestx)
             self.app.bytesperop[opname] = traffic
             ghosts = self.app.ghostsperop.get(opname, [])
-            ghosts.append(len(identities) + v1)
+            ghosts.append(len(identities) + len(proxies) + v1)
             self.app.ghostsperop[opname] = ghosts
         else:
-            self.app.before_server(callsite, identities)
+            self.app.before_server(callsite, identities, proxies=proxies)
             pause = datetime.datetime.now()
             callsite.result = self.terminus.execute_request(callsite)
             resume = datetime.datetime.now()
             identities = self.app.after_server(callsite)
+            proxies = []
+            if isinstance(identities, tuple):
+                (identities, proxies) = identities
+            proxies = proxies_to_thrift(proxies)
         
         #print "ghosts sent = %d" % len(identities)
-        self.app.after_client(callsite, identities)
+        self.app.after_client(callsite, identities, proxies=proxies)
         stop = datetime.datetime.now()
         timing = self.app.timeperop.get((opname, "client"), [])
         timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
@@ -486,9 +540,13 @@ class ServerProxyHandler(object):
         identity_attributes = request.identity_attributes
         callsite = serialization.DeserializeThriftMsg(TCallSite(), payload)
         identities = thrift_map_to_identities(identity_attributes)
-        (callsite, identities) = self.server_proxy.on_proxied_request(callsite, identities, start)
+        (callsite, identities) = self.server_proxy.on_proxied_request(callsite, identities, start, proxies=request.port_configurations)
+        proxies = []
+        if isinstance(identities, tuple):
+            (identities, proxies) = identities
+        proxies = proxies_to_thrift(proxies)
         payload = serialization.serialize_python(callsite.result) # serialization.SerializeThriftMsg(callsite.to_thrift_object())
-        return Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities))
+        return Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies)
 
     def get_identity_attributes(self, id):
         raise ValueError("XXX todo")
@@ -506,14 +564,14 @@ class ServerProxy(object):
         processor = Proxy.Processor(ServerProxyHandler(self))
         self.server = thriftutil.start_daemon_with_defaults(processor, self.service.proxy_endpoint[1])
 
-    def on_proxied_request(self, tcallsite, identities, start=None):
+    def on_proxied_request(self, tcallsite, identities, start=None, proxies=[]):
         if not start:
             start = datetime.datetime.now()
         opname = tcallsite.op_name
         cs = CallSite(self.service, tcallsite.op_name, tcallsite.arguments)
         cs.extra = tcallsite.extra
         cs.deserialize_args()
-        self.app.before_server(cs, identities)
+        self.app.before_server(cs, identities, proxies=proxies)
         pause = datetime.datetime.now()
         cs.result = self.terminus.execute_request(cs)
         resume = datetime.datetime.now()

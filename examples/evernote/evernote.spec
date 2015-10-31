@@ -3,6 +3,7 @@ service UserStore {
 
     getNoteStoreUrl(authToken)
     @identifies ns:NoteStore by {{ result }}
+   # @identifies us:UserStore by {{ result }}
 
     getUser(authToken)
     @precondition {{ len(authToken) > 0 }}
