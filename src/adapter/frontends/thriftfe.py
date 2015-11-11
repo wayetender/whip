@@ -79,7 +79,12 @@ class ThriftProxyTerminus(ProxyTerminus):
     def set_proxy(self, proxy):
         if self.protocol == 'binary-https':
             ap = proxy.service.get_actual_endpoint()
-            proxy.service.overridden_id = "https://%s:%s%s" % (ap[0], ap[1], self.frompath)
+            extra = ''
+            if proxy.service.overridden_id:
+                extra = proxy.service.overridden_id.partition('?')[2]
+            if len(extra) > 0:
+                extra = '?%s' % extra
+            proxy.service.overridden_id = "https://%s:%s%s%s" % (ap[0], ap[1], self.frompath, extra)
 
     def serve_requests(self, client_proxy, endpoint = None):
         '''returns: endpoint it is listening on'''

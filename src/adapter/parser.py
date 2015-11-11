@@ -37,12 +37,13 @@ class JSTag(object):
 
 
 class IdentifiesTag(object):
-    def __init__(self, type, name, expr, ifcheck, multiple):
+    def __init__(self, type, name, expr, ifcheck, multiple, higher=None):
         self.type = type
         self.name = name
         self.expr = expr
         self.ifcheck = ifcheck
         self.multiple = multiple
+        self.higher = higher
 
     def __repr__(self):
         return "@identifies %s%s as %s by %s" % (self.type, "[]" if self.multiple else '', self.name, self.expr)
@@ -91,6 +92,14 @@ class InvariantTag(object):
     def __repr__(self):
         return "@invariant for %s is %s" % (self.name, self.expr)
 
+class WhereTag(object):
+    def __init__(self, name, expr):
+        self.name = name
+        self.expr = expr
+
+    def __repr__(self):
+        return "@where %s is %s" % (self.name, self.expr)
+
 
 states = (
     ('comment', 'exclusive'),
@@ -108,14 +117,16 @@ reserved = {
    'to' : 'TO',
    'if' : 'IF',
    'by' : 'BY',
+   'is' : 'IS',
+   'this' : 'THIS',
    'requires' : 'REQUIRES',
    'fromhttppath' : 'FROMHTTPPATH',
 }
 
 tokens = [
-    'PRECONDITION_ONLY', 'PRECONDITION_FULL', 'POSTCONDITION_ONLY', 'POSTCONDITION_FULL', 'IDENTIFIES', 'UPDATES', 'INVARIANT', 'IMMUTABLE', 'IDENTIFIERTAG', 'INITIALIZES', # tags
+    'PRECONDITION_ONLY', 'PRECONDITION_FULL', 'POSTCONDITION_ONLY', 'POSTCONDITION_FULL', 'IDENTIFIES', 'UPDATES', 'INVARIANT', 'IMMUTABLE', 'IDENTIFIERTAG', 'INITIALIZES', 'WHERE', # tags
     'COMMA', 'DOT', 'EQUALS', 'COLON',   # punctuation
-    'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'LSQUARE', 'RSQUARE',   # brackets
+    'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'LSQUARE', 'RSQUARE', 'LANGLE', 'RANGLE',   # brackets
     'STRING', 'BOOLEAN', 'INTEGER', 'DECIMAL', 'IP',  # literals
     'JAVASCRIPT', 'IDENTIFIER',
     ] + list(reserved.values())
@@ -132,6 +143,8 @@ t_LSQUARE       = r'\['
 t_RSQUARE       = r'\]'
 t_LPAREN        = r'\('
 t_RPAREN        = r'\)'
+t_LANGLE        = r'<'
+t_RANGLE        = r'>'
 t_COLON         = r':'
 
 # Literals
@@ -148,6 +161,7 @@ t_INVARIANT = r'@invariant'
 t_IMMUTABLE = r'@immutable'
 t_IDENTIFIERTAG = r'@identifier'
 t_INITIALIZES = r'@initializes'
+t_WHERE = r'@where'
 
 t_ignore = " \t"
 
@@ -366,6 +380,10 @@ def p_tags_token(p):
     'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER BY JAVASCRIPT'
     p[0] = IdentifiesTag(p[4], p[2], p[6], '', False)
 
+def p_tags_higher_token(p):
+    'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER LANGLE JAVASCRIPT RANGLE BY JAVASCRIPT'
+    p[0] = IdentifiesTag(p[4], p[2], p[9], '', False, higher = p[6])
+
 def p_tags_multiple(p):
     'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER LSQUARE RSQUARE BY JAVASCRIPT'
     p[0] = IdentifiesTag(p[4], p[2], p[8], '', True)
@@ -401,6 +419,11 @@ def p_tags_initializes_generic(p):
 def p_tags_invariant(p):
     'tag : INVARIANT FOR IDENTIFIER JAVASCRIPT'
     p[0] = InvariantTag(p[3], p[4])
+
+
+def p_tags_where(p):
+    'tag : WHERE THIS IS JAVASCRIPT'
+    p[0] = WhereTag('this', p[4])
 
 
 def p_ghost_no_requires(p):

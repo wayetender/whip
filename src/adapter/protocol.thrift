@@ -40,6 +40,7 @@ struct Annotated {
     1: blob original_payload;
     2: list<IdentityAttribute> identity_attributes;
     3: list<PortConfiguration> port_configurations;
+    4: string from_proxy_name;
 }
 
 

@@ -8,9 +8,9 @@ import time
 host = 'localhost:9443'
 token = '......................faketoken........................'
 
-def run_sharednotes(host):
+def run_sharednotes(host, n=0):
     total = test_utils.StopWatch('total')
-    client = EvernoteClient(token=token, service_host=host)
+    client = EvernoteClient(token="%s%s" % (token, n), service_host=host)
     userStore = client.get_user_store()
     tracker = test_utils.track_traffic(userStore._client)
     #user = userStore.getUser()
@@ -42,19 +42,33 @@ def run_sharednotes(host):
 
 #run_sharednotes(host)
 
+import psutil
+import os
+process = psutil.Process(os.getpid())
+
 if __name__ == '__main__':
-    NUM_TRIALS = 1
+    NUM_TRIALS = 4000
     import mockevernoteserver
-    mockevernoteserver.start_all()
+    #mockevernoteserver.start_all()
     time.sleep(1.0)
     print "starting %d trials..." % NUM_TRIALS
     report = []
+    
+    #test_utils.setup_adapter_only('adapter.yaml', 1)()
     for trial in xrange(NUM_TRIALS):
-        test_utils.setup_adapter_only('adapter.yaml', 1)()
-        (traffic, stopwatch) = run_sharednotes(host)
-        stats = test_utils.get_adapter_stats()
-        report.append((traffic, stopwatch, stats))
-        test_utils.teardown_adapter_only()
-        print "Trial %d / %d: %s" % (trial+1, NUM_TRIALS, stopwatch)
+        (traffic, stopwatch) = run_sharednotes(host, 1)
+        if trial % 100 == 0:
+            print trial
+            pass
+            #import gc
+            #gc.collect(2)
+            #mem = process.memory_info()
+            #print mem
+            #print mem / 1024
+    #    stats = test_utils.get_adapter_stats()
+    #    report.append((traffic, stopwatch, stats))
+    #    test_utils.teardown_adapter_only()
+    #    print "Trial %d / %d: %s" % (trial+1, NUM_TRIALS, stopwatch)
     print "-- End of %d trials --" % NUM_TRIALS
-    print test_utils.format_stats(report)
+    #print test_utils.format_stats(report)
+    

@@ -20,8 +20,8 @@ class ProxyApplication(object):
 
     def __init__(self, redirector):
         self.terminal = Terminal()
-        self.client_proxies = []
-        self.server_proxies = []
+        #self.client_proxies = []
+        #self.server_proxies = []
         self.redirector = redirector
         self.bytesperop = {}
         self.timeperop = {}
@@ -29,13 +29,19 @@ class ProxyApplication(object):
         self.ghostsperop = {}
         self.interpreters = {}
         self.client_actuals = []
+        self.name = None
+        self.proxy_ports = {}
 
     def register_interpreter(self, nm, config):
         self.terminal.register_interpreter(nm, config)
 
+    def lookup_proxy_port(self, proxy_port):
+        return self.proxy_ports.get(proxy_port, None)
+
     def lookup_service(self, identifier):
         res = []
         for s in self.services:
+            #print "looking for %s against %s" % (identifier,s.overridden_id)
             if s.overridden_id == identifier:
                 res.append(s)
         if len(res) == 0:
@@ -59,20 +65,21 @@ class ProxyApplication(object):
             else:
                 self.client_actuals.append(proxy_config['actual'])
         (s, terminus) = self.terminal.generate_terminus(proxy_config)
+        if s.is_proxied():
+            self.proxy_ports[s.actual_endpoint] = s.proxy_endpoint
         s.proxy_type = proxy_config['type']
         return self.register_service(s, terminus)
 
     def register_service(self, s, terminus):
-        self.services.append(s)
         if s.proxy_type == 'server':
             proxy = ServerProxy(self, s, terminus)
-            self.server_proxies.append(proxy)
+            #self.server_proxies.append(proxy)
             terminus.set_proxy(proxy)
             proxy.accept_proxied_requests()
             return proxy
         elif s.proxy_type == 'client':
             proxy = ClientProxy(self, s, terminus)
-            self.client_proxies.append(proxy)
+            #self.client_proxies.append(proxy)
             terminus.set_proxy(proxy)
             proxy.accept_unproxied_requests()
             return proxy
@@ -236,6 +243,9 @@ class StateVars(Attribute):
         return StateVarsAttribute(state_vars=items)
 
 
+def generate_proxy_client(proxy_endpoint):
+    return thriftutil.get_client_with_defaults(Proxy.Client, proxy_endpoint[0], proxy_endpoint[1])
+
 class Service(object):
     def __init__(self, proxy_endpoint, actual_endpoint, service_name = 'generic-service'):
         self.proxy_endpoint = proxy_endpoint
@@ -248,7 +258,7 @@ class Service(object):
 
     def get_proxy_client(self):
         assert self.is_proxied()
-        return thriftutil.get_client_with_defaults(Proxy.Client, self.proxy_endpoint[0], self.proxy_endpoint[1])
+        return generate_proxy_client(self.proxy_endpoint)
 
     def get_actual_endpoint(self):
         return self.actual_endpoint
@@ -314,7 +324,9 @@ class Terminal(object):
                 raise ValueError("unknown way to interpret connection %s" % str(config['actual']))
             protocol = interpreter[0]
             generator = frontends.protocols[protocol]
-            self.ends[s] = generator(interpreter[1], self, config)
+            blah = generator(interpreter[1], self, config)
+            #self.ends[s] = blah
+            return (s, blah)
         return (s, self.ends[s])
 
 
@@ -325,6 +337,7 @@ class CallSite(object):
         self.args = args
         self.result = result
         self.extra = {}
+        self.from_proxy_name = 'unknown'
 
     def __str__(self):
         return "%s :: %s(%s) %s" % (self.service, self.opname, self.args, ("-> %s" % self.result if self.result else ""))
@@ -488,12 +501,13 @@ class ClientProxy(object):
         if isinstance(identities, tuple):
             (identities, proxies) = identities
         proxies = proxies_to_thrift(proxies)
-        if callsite.service.is_proxied():
-            proxy = callsite.service.get_proxy_client()
+        proxy = self.app.lookup_proxy_port(self.service.actual_endpoint)
+        if callsite.service.is_proxied() or proxy:
+            proxy = callsite.service.get_proxy_client() if not actual else generate_proxy_client(proxy)
             tracker = track_traffic(proxy)
             payload = serialization.SerializeThriftMsg(callsite.to_thrift_object())
             v1 = len(identities) + len(proxies)
-            request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies)
+            request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies, from_proxy_name=self.app.name)
             pause = datetime.datetime.now()
             annotated_res = proxy.execute(request)
             resume = datetime.datetime.now()
@@ -502,11 +516,11 @@ class ClientProxy(object):
             proxies = annotated_res.port_configurations
             callsite.result = serialization.deserialize_python(annotated_res.original_payload)
             traffic = self.app.bytesperop.get(opname, [])
-            traffic.append(tracker.bytesrx + tracker.bytestx)
-            self.app.bytesperop[opname] = traffic
+            ###traffic.append(tracker.bytesrx + tracker.bytestx)
+            ###self.app.bytesperop[opname] = traffic
             ghosts = self.app.ghostsperop.get(opname, [])
-            ghosts.append(len(identities) + len(proxies) + v1)
-            self.app.ghostsperop[opname] = ghosts
+            ###ghosts.append(len(identities) + len(proxies) + v1)
+            ###self.app.ghostsperop[opname] = ghosts
         else:
             self.app.before_server(callsite, identities, proxies=proxies)
             pause = datetime.datetime.now()
@@ -522,8 +536,8 @@ class ClientProxy(object):
         self.app.after_client(callsite, identities, proxies=proxies)
         stop = datetime.datetime.now()
         timing = self.app.timeperop.get((opname, "client"), [])
-        timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
-        self.app.timeperop[(opname, "client")] = timing
+        ###timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
+        ###self.app.timeperop[(opname, "client")] = timing
         return callsite.result
 
 
@@ -539,6 +553,7 @@ class ServerProxyHandler(object):
         payload = request.original_payload
         identity_attributes = request.identity_attributes
         callsite = serialization.DeserializeThriftMsg(TCallSite(), payload)
+        callsite.from_proxy_name = request.from_proxy_name
         identities = thrift_map_to_identities(identity_attributes)
         (callsite, identities) = self.server_proxy.on_proxied_request(callsite, identities, start, proxies=request.port_configurations)
         proxies = []
@@ -546,7 +561,7 @@ class ServerProxyHandler(object):
             (identities, proxies) = identities
         proxies = proxies_to_thrift(proxies)
         payload = serialization.serialize_python(callsite.result) # serialization.SerializeThriftMsg(callsite.to_thrift_object())
-        return Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies)
+        return Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies, from_proxy_name=self.server_proxy.app.name)
 
     def get_identity_attributes(self, id):
         raise ValueError("XXX todo")
@@ -570,6 +585,7 @@ class ServerProxy(object):
         opname = tcallsite.op_name
         cs = CallSite(self.service, tcallsite.op_name, tcallsite.arguments)
         cs.extra = tcallsite.extra
+        cs.from_proxy_name=tcallsite.from_proxy_name
         cs.deserialize_args()
         self.app.before_server(cs, identities, proxies=proxies)
         pause = datetime.datetime.now()
@@ -579,7 +595,7 @@ class ServerProxy(object):
         #print "ghosts sent = %d" % len(identities)
         stop = datetime.datetime.now()
         timing = self.app.timeperop.get((opname, "server"), [])
-        timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
-        self.app.timeperop[(opname, "server")] = timing
+        ###timing.append((stop - start - (resume - pause)).total_seconds() * 1000)
+        ###self.app.timeperop[(opname, "server")] = timing
         return (cs, identities)
 

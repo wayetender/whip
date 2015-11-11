@@ -253,7 +253,7 @@ def measure(rpc, f):
     diff = (datetime.datetime.now() - n).total_seconds() * 1000
     d = measurements.get(rpc, [])
     d.append(diff)
-    measurements[rpc] = d
+    #measurements[rpc] = d
     return v
 
 def track_suds_traffic(client, tracker = None):

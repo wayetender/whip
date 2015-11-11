@@ -14,6 +14,7 @@ from threading import Thread
 import time
 
 DELAY = 0.5
+numRequests = 0
 
 logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)3d %(funcName)20s() -- %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
@@ -21,33 +22,41 @@ class Handler(UserStore.Iface):
     def getUser(self, authenticationToken):
         return User(id=1, username="test", email="test", name="test", timezone=None, privilege=None, created=None, updated=None, deleted=None, active=None, shardId=None, attributes=None, accounting=None, premiumInfo=None, businessUserInfo=None)
     def getNoteStoreUrl(self, authenticationToken):
-        time.sleep(.01)
+        #-time.sleep(.01)
         #print "getting note store for %s" % authenticationToken
-        return "https://localhost:9444/"
+        return "https://127.0.0.1:9444/"
 
 class Handler2(NoteStore.Iface):
     def listNotebooks(self, authenticationToken):
-        time.sleep(.01)
+        #-time.sleep(.01)
         return []
 
     def listLinkedNotebooks(self, authToken):
-        time.sleep(.451)
-        ln = LinkedNotebook(guid='guid0', shareKey='asd', noteStoreUrl='https://localhost:9444/')
+        #-time.sleep(.451)
+        global numRequests
+        #numRequests += 1
+        ln = LinkedNotebook(guid='guid0%s' % numRequests, shareKey='asd', noteStoreUrl='https://127.0.0.1:9444/')
         return [ln]
 
     def getSharedNotebookByAuth(self, authToken):
-        time.sleep(.521)
-        sn = SharedNotebook(notebookGuid='guid1')
+        #-time.sleep(.521)
+        global numRequests
+        #numRequests += 1
+        sn = SharedNotebook(notebookGuid='guid1%s' % numRequests)
         return sn
 
     def authenticateToSharedNotebook(self, shareKey, authToken):
-        time.sleep(.495)
-        ar = AuthenticationResult(authenticationToken='temp1')
+        #-time.sleep(.495)
+        global numRequests
+        #numRequests += 1
+        ar = AuthenticationResult(authenticationToken='temp1%s' % numRequests)
         return ar
 
     def findNotes(self, authToken, filter, offset, maxNotes):
-        time.sleep(.474)
-        note = Note(guid='guid2', title='test')
+        #-time.sleep(.474)
+        global numRequests
+        #numRequests += 1
+        note = Note(guid='guid2%s' % numRequests, title='test')
         notes = [note]
         nl = NoteList(notes=notes, totalNotes=len(notes),startIndex=0)
         return nl
@@ -78,8 +87,18 @@ def start_all():
 
 if __name__ == '__main__':
     start_all()
+    import sys
+    sys.path.append('../')
+    import test_utils
+    test_utils.setup_adapter_only('adapter.yaml', 1)()
+    import psutil
+    import os
     try:
+        process = psutil.Process(os.getpid())
+        process = process.children(recursive=True)[1]
         while True:
-            raw_input()
+            mem = process.memory_info()
+            print mem.rss / 1024
+            time.sleep(5)
     except KeyboardInterrupt:
         pass

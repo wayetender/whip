@@ -2,21 +2,29 @@
 service UserStore {
 
     getNoteStoreUrl(authToken)
-    @identifies ns:NoteStore by {{ result }}
+    @where this is {{ authToken }}
+    @identifies ns:NoteStore[] by {{
+        yield (result, authToken)
+    }}
    # @identifies us:UserStore by {{ result }}
 
     getUser(authToken)
+    @where this is {{ authToken }}
     @precondition {{ len(authToken) > 0 }}
 }
 
 
 service NoteStore {
     listNotebooks(authToken)
+    @where this is {{ authToken }}
     @precondition {{ len(authToken) < 0 }}
 
     listLinkedNotebooks(authToken)
+    @where this is {{ authToken }}
     @identifies noteStores:NoteStore[] by {{
-        for notebook in result: yield (notebook.noteStoreUrl)
+        for notebook in result: 
+            #print notebook
+            yield (notebook.noteStoreUrl, notebook.shareKey)
     }}
     
     getSharedNotebookByAuth(authToken)
