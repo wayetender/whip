@@ -92,7 +92,7 @@ int connect(int sockfd, const struct sockaddr *res, socklen_t addrlen)
             hints.ai_family = AF_INET;
             hints.ai_socktype = SOCK_STREAM;
             const char* port_str = boost::lexical_cast<std::string>(info.port).c_str();
-            fprintf(stderr, "redirecting to %s:%s\n", info.address.c_str(), port_str);
+            //fprintf(stderr, "redirecting to %s:%s\n", info.address.c_str(), port_str);
             error = getaddrinfo(info.address.c_str(), port_str, &hints, &server_info);
             if (error)
             {
