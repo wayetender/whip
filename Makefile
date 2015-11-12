@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 
 all: adapter shim env/calculator env/chess env/calculator_thrift env/evernote
 

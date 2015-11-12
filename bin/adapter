@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 BASEDIR=$(dirname $0)
 source $BASEDIR/../env/adapter/bin/activate
