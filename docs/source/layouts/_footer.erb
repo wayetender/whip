@@ -1,0 +1,39 @@
+<div id="footer" class="navigation">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <div>
+          <ul class="main-links white nav navbar-nav">
+            <li><a href="/docs">Documentation</a></li>
+          </ul>
+          <ul class="external-links white nav navbar-nav">
+            <li class="github">
+              <a href="/"><%= partial "layouts/svg/svg-github" %>GitHub</a>
+            </li>
+          </ul>
+
+          <ul class="external-links white nav navbar-nav navbar-right">
+              <li><a href="<%= github_url :current_page %>">Edit this page</a></li>
+          </ul>
+        </div>
+        
+    </div>
+  </div>
+</div>
+</div>
+
+
+<%= javascript_include_tag 'application' %>
+
+<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+  <%= javascript_include_tag "ie-compat" %>
+<![endif]-->
+
+<script>
+	APP.initialize();
+</script>
+
+
+</body>
+</html>

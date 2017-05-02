@@ -1,0 +1,163 @@
+<div id="jumbotron-mask">
+	<div id="jumbotron">
+			<div class="container">
+				<div class="picture">
+				<canvas id="demoCanvas0" width="1000" height="500" style=""></canvas>
+				<div class="col-lg-6 col-md-6">
+					<h2 class="rls-l">
+					Safe composition of <br> modern services.
+					</h2>
+				</div>
+				<div class="jumbo-logo-wrap col-lg-offset-1 col-lg-5 col-md-6 hidden-xs hidden-sm">
+					<div class="jumbo-logo"></div>
+					
+				</div>
+				<!-- <p><a class="btn btn-primary btn-lg">Learn more &raquo;</a></p> -->
+			</div>
+			</div>
+			<div class="jumbotron-dots"></div>
+
+	</div>
+</div>
+
+<div id="jumbotron-mask-dummy" aria-hidden="true">
+	<div id="jumbotron">
+			<div class="container">
+				<div class="col-lg-6 col-md-6">
+					<h2 class="rls-l">
+					Safe composition of modern services.
+					</h2>
+				</div>
+				<div class="jumbo-logo-wrap col-lg-offset-1 col-lg-5 col-md-6 hidden-xs hidden-sm">
+					<div class="jumbo-logo"></div>
+				</div>
+				<!-- <p><a class="btn btn-primary btn-lg">Learn more &raquo;</a></p> -->
+			</div>
+			<div class="jumbotron-dots"></div>
+	</div>
+</div>
+
+<div id="tagline">
+	<div class="container">
+		<div class="row double-row">
+			<div class="cols-xs-12 col-lg-12">
+			<p><strong>Whip</strong> is a program that intercepts and checks messages
+			a service sends and receives against their contracts. 
+			<br>
+			Use <strong>Whip</strong> to find the sources of buggy services.
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="features">
+	<div class="container">
+		<div class="row double-row">
+			<div class="col-lg-6 col-md-6">
+				<div class="row">
+					<div class="col-lg-5 col-md-5">
+						<canvas id="demoCanvas1" class="icnnetwork"  width="186" height="210" style=""></canvas>
+					</div>
+					<div class="col-lg-7 col-md-7">
+						<h2>Language Agnostic</h2>
+						<p>
+						Whip treats services as black boxes, only intercepting the network messages they send and receive.
+						</p>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6 col-md-6">
+				<div class="row">
+					<div class="col-lg-5 col-md-5">
+						<canvas id="demoCanvas2" class="icnnetwork"  width="186" height="210" style=""></canvas>
+					</div>
+					<div class="col-lg-7 col-md-7">
+						<h2>Transparent</h2>
+						<p>Whip exchanges information by piggybacking on existing service messages,
+						and is transparent to Whip-unenhanced services.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row double-row">
+			<div class="col-lg-6 col-md-6">
+				<div class="row">
+					<div class="col-lg-5 col-md-5">
+						<span class="icn msg"></span>
+					</div>
+					<div class="col-lg-7 col-md-7">
+						<h2>Message Format Aware</h2>
+						<p>Whip's modular message parsing system supports popular interface technologies, such as Thrift, REST, and WSDL.</p>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6 col-md-6">
+				<div class="row">
+					<div class="col-lg-5 col-md-5">
+						<span class="icn spec"></span>
+					</div>
+					<div class="col-lg-7 col-md-7">
+						<h2>Service contracts</h2>
+						<p>Whip tracks how services refer to other services, and 
+						checks that the claimed behavior matches their actual behavior.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div> <!-- /container -->
+</div> <!-- /features -->
+
+<div id="demos">
+	<div class="container">
+		<div class="row">
+
+
+			<div class="cols-xs-12 col-lg-12 explantion">
+				<pre class="smaller-code"><code><span id="spec-full-service"><span id="spec-service-test"><span class="code-kw">service</span> Login</span> {
+  register(username, email, pass)
+  <span class="code-tag">@requires</span> &laquo;<span class="code-con"> valid_email(email) <span class="code-con-kw">and</span> len(pass) > 7 </span>&raquo;
+  
+  login(username, pass)
+  <span class="code-tag">@ensures</span> &laquo;<span class="code-con"> len(username) > 0 </span>&raquo;
+  <span class="code-tag">@identifies</span> User <span class="code-tag">at</span> &laquo; <span class="code-con"><span class="code-con-kw">result</span>.userServiceURL</span> &raquo; <span class="code-tag">indexedby</span> &laquo;<span class="code-con"> <span class="code-con-kw">result</span>.authToken </span>&raquo;
+}</span>
+
+<span class="code-kw">service</span> User {
+  get_userinfo(authToken)
+  <span class="code-tag">@where index is </span> &laquo;<span class="code-con"> authToken </span> &raquo;
+  <span class="code-tag">@ensures</span> &laquo;<span class="code-con"> valid_email(<span class="code-con-kw">result</span>.email) </span> &raquo;
+}
+</code></pre>
+			<div class="code-desc">
+						<h3>Whip Contracts</h3>
+			<p>Whip provides its own specification language to express contracts. It
+does not focus on syntactic specifications, but rather on how services refer to each other.
+<p>
+Whip monitors contracts at run time by intercepting messages a service sends and receives. 
+
+			<p><a class="btn btn-primary btn-md" id="tour-btn">Learn more &raquo;</a></p>
+			</div>
+
+</div>
+
+		</div>
+	</div>
+</div><!-- /#demos -->
+
+<div id="cta">
+	<div class="container ">
+		<div class="row">
+		    
+			<div class="intro">
+				<div class="left col-xs-12 col-sm-offset-2 col-sm-4">
+					<p>See how Whip works with an example application that you can run locally.</p>
+				</div>
+				<div class="right col-xs-12 col-sm-6 col-sm-offset-0">
+					<a class="outline-btn purple" href="/">Read the example &#187;</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,100 @@
+//
+// Jumbotron
+// --------------------------------------------------
+
+#jumbotron-mask,
+#jumbotron-mask-dummy{
+  overflow: hidden;
+  width: 100%;
+  height: $jumbotron-total-height;
+}
+#jumbotron-mask {
+  position: absolute;
+  padding-top:11px;
+  top: 0;
+}
+#jumbotron-mask-dummy{
+  visibility: hidden;
+  position:relative;
+  top: $negative-hero-margin;
+}
+
+.picture {
+  position:relative;
+}
+
+#demoCanvas0 {
+  position:absolute;
+  top:50px;
+  opacity: 0.7;
+}
+
+#jumbotron {
+  position: relative;
+  height: $jumbotron-total-height;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: $negative-hero-margin;
+  color: $jumbotron-color;
+  -webkit-backface-visibility:hidden;
+  background: image-url('background_logo.jpg') center no-repeat;
+
+  .jumbotron-dots{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 432px;
+    width: 100%;
+    margin-top: $negative-hero-margin;
+    background: transparent image-url('hero-dots.png') center $header-height no-repeat;
+  }
+
+
+  .container{
+    position: relative;
+    height: 100%;
+    margin-top: $header-height;
+    -webkit-backface-visibility:hidden;
+
+    .jumbo-logo-wrap{
+      margin-top: 135px;
+
+      .jumbo-logo{
+        height: 316px;
+        width:144;
+        background:  transparent image-url('logowhip.png') 0 0 no-repeat;
+        background-size: 318px 144px;
+        z-index: 20;
+      }
+    }
+
+    h2{
+      margin-top: 175px;
+      font-size: 40px;
+      line-height: 48px;
+      letter-spacing: 1px;
+      margin-left: 40px;
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  #jumbotron .container {
+    h2{
+      text-align: center;
+      margin-left: 0;
+    }
+  }
+  #jumbotron-mask-dummy{
+    top: $large-negative-hero-margin;
+  }
+}
+
+@media (max-width: 480px) {
+  #jumbotron .container {
+    h2{
+      margin-top: 130px;
+      font-size: 32px;
+    }
+  }
+}
