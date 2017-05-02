@@ -2,7 +2,7 @@
 # Configure Middleman
 #-------------------------------------------------------------------------
 
-set :base_url, "http://whip.services/priv/"
+set :base_url, "http://whip.services/"
 
 activate :hashicorp do |h|
   h.releases_enabled = false
@@ -11,7 +11,6 @@ activate :hashicorp do |h|
 end
 
 activate :deploy do |deploy|
-  deploy.build_before = true 
   deploy.method = :git
   # Optional Settings
   # deploy.remote   = 'custom-remote' # remote name or git url, default: origin
