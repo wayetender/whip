@@ -1,4 +1,8 @@
 import textwrap
+import rfc822
+import chess
+import chess.pgn
+from StringIO import StringIO
 
 class Console(object):
     def log(self, text):
@@ -63,6 +67,9 @@ def eval_code(env, py):
         env['isUnknown'] = is_unknown
         env['split'] = split
         env['isFresh'] = is_fresh
+        env['rfc822_parsedate_tz'] = rfc822.parsedate_tz
+        env['chess_pgn_read_game'] = chess.pgn.read_game
+        env['StringIO'] = StringIO
 
         if 'yield' in env:
             env['_yield'] = env['yield']

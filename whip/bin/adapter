@@ -1,5 +1,0 @@
-#!/bin/bash
-
-BASEDIR=$(dirname $0)
-source $BASEDIR/../env/adapter/bin/activate
-python -u $BASEDIR/../src/adapter/app.py $*

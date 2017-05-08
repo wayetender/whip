@@ -1,7 +1,7 @@
 import proxy
 from parser import GhostDecl, ServiceContractDecl, JSTag, IdentifiesTag, InitializesTag, UpdatesTag, GenericUpdatesTag, GenericInitializesTag, parse, WhereTag
 import logging
-from proxy import StateVars
+from proxy import StateVars, ClientProxy
 from protocol.ttypes import Identity, IdentityType
 #from util.js import eval_code, is_unknown, AssertionFailure, rewrite_for_unknown_ops
 from util.eval import eval_code, is_unknown, AssertionFailure, rewrite_for_unknown_ops
@@ -137,8 +137,8 @@ def report_error(registry, msg, identities, env={}, callsite = None):
                 msg += "    }\n" 
             else:
                 msg += "  - %s = %s\n" % (k, v)
-    for identity in dict(identities).values():
-        msg += print_trace("", registry, identity, {})
+    #for identity in dict(identities).values():
+    #    msg += print_trace("", registry, identity, {})
     logger.warn(msg)
     
 def print_trace(depth, registry, identity, seen):
@@ -253,6 +253,13 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         identifier = "%s:%s" % (proxy_config['actual']) if 'identifier' not in proxy_config else proxy_config['identifier']
         (_,s) = self.lookup_service(identifier)
         if s:
+            if proxy_config['type'] == 'client':
+                (s2, terminus) = self.terminal.generate_terminus(proxy_config, blame_label)
+                s2.proxy_type = proxy_config['type']
+                if proxy_config['actual'] not in self.client_actuals:
+                    self.client_actuals.append(proxy_config['actual'])
+                    final = self.register_service(s2, terminus)
+            
             if type(s) != list and s.service_name == proxy_config['mapsto']:
                 if set(blame_label + s.blame_labels) != set(s.blame_labels):
                     print "--- merging blame label %s in with %s" % (blame_label, s)
@@ -260,7 +267,10 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             else:
                 print "--- conflict merge on %s" % (proxy_config,)
                 (sp, _) = self.terminal.generate_terminus(proxy_config, blame_label)
-                self.services.append(sp)
+                servicelist = self.services.get(sp.overridden_id, [])
+                servicelist.append(sp)
+                self.services[sp.overridden_id] = servicelist
+                #--self.services.append(sp)
                 #--self.services = list(set(self.services[0:10] + self.services[-10:]))
                 return
         else:
@@ -272,14 +282,23 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                 s.overridden_id = proxy_config['identifier']
 
             #print "store-- adding %s" % s.overridden_id
-            self.services.append(s)
+            #--self.services.append(s)
             #--self.services = list(set(self.services[0:10] + self.services[-10:]))
             if proxy_config['type'] == 'client':
                 if proxy_config['actual'] in self.client_actuals:
-                    return
+                    proxy = ClientProxy(self, s, terminus)
+                    terminus.set_proxy(proxy)
+                    final = None
                 else:
                     self.client_actuals.append(proxy_config['actual'])
-            return self.register_service(s, terminus)
+                    final = self.register_service(s, terminus)
+            else:
+                final = self.register_service(s, terminus)
+            servicelist = self.services.get(s.overridden_id, [])
+            #print s.overridden_id
+            servicelist.append(s)
+            self.services[s.overridden_id] = servicelist
+            return final
 
     def compute_references(self, callsite, rpc):
         identity = callsite.service.get_identity()
@@ -289,15 +308,15 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         env = dict(zip(rpc.formals, callsite.args) + [('result', callsite.result)])
         for tag in rpc.tags:
             if isinstance(tag, IdentifiesTag):
-                if 'result' in tag.expr and not callsite.result:
+                if 'result' in tag.expr and callsite.result == None:
                     continue
 
                 if tag.multiple: 
                     inner_items = StrDict()
                     def y(identifier, higher=None):
-                        identifier = str(identifier)
+                        identifier = str(identifier).encode('ascii', 'ignore')
                         if higher:
-                            identifier += "?" + higher
+                            identifier += "?" + str(higher).encode('ascii', 'ignore')
                         ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver, identity)
                         if higher:
                             ghost.identity.identifier = identifier
@@ -319,6 +338,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                 found = True
                 index = eval_code(env, tag.expr)
                 identifier = "%s?%s" % (callsite.service.overridden_id, index)
+                identifier = str(identifier).encode('ascii', 'ignore')
                 (_, s) = self.lookup_service(identifier)
         if not found:
             (_, s) = self.lookup_service(callsite.service.overridden_id)

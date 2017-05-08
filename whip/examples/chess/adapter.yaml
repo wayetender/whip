@@ -1,11 +1,9 @@
-name: chess-adapter
+name: a
 redirector_port: 9090
-spec: chess.spec
+spec: /whip/examples/chess/chess.spec
+interpreters:
+  Chess: soap(wsdl='http://localhost:8000/?wsdl')
 server_proxies:
-  - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') proxiedby 127.0.0.1:8001 mapstoservice Chess
+  - 127.0.0.1:8000 proxiedby 127.0.0.1:8001 mapstoservice Chess
 client_proxies:
-  - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') proxiedby 127.0.0.1:8001 mapstoservice Chess
-#  - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') mapstoservice Chess
-
-
-
+  - 127.0.0.1:8000 proxiedby 127.0.0.1:8001 mapstoservice Chess

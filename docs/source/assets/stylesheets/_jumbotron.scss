@@ -37,7 +37,7 @@
   margin-top: $negative-hero-margin;
   color: $jumbotron-color;
   -webkit-backface-visibility:hidden;
-  background: image-url('background_logo.jpg') center no-repeat;
+  background: $red-darker image-url('background_logo.jpg') center no-repeat;
 
   .jumbotron-dots{
     position: absolute;

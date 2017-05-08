@@ -7,6 +7,7 @@ from protocol import Proxy
 from protocol.ttypes import Identity, Annotated, IdentityType, IdentityAttribute, IdentityAttributeType, StateVar, StateVarsAttribute, CallSiteSetAttribute, PortConfiguration
 from protocol.ttypes import CallSite as TCallSite
 from util import thriftutil
+from util import lrustore
 import datetime
 from util import serialization
 #from util.js import Unknown, unwrap
@@ -14,6 +15,9 @@ from util.eval import Unknown, unwrap
 #from pyv8 import PyV8
 
 logger = logging.getLogger(__name__)
+
+network_bytes = open('bytes', 'w')
+network_bytes.truncate()
 
 class ProxyApplication(object):
     __metaclass__ = abc.ABCMeta
@@ -25,7 +29,7 @@ class ProxyApplication(object):
         self.redirector = redirector
         self.bytesperop = {}
         self.timeperop = {}
-        self.services = []
+        self.services = lrustore.LruStore()
         self.ghostsperop = {}
         self.interpreters = {}
         self.client_actuals = []
@@ -39,11 +43,7 @@ class ProxyApplication(object):
         return self.proxy_ports.get(proxy_port, None)
 
     def lookup_service(self, identifier):
-        res = []
-        for s in self.services:
-            #print "looking for %s against %s" % (identifier,s.overridden_id)
-            if s.overridden_id == identifier:
-                res.append(s)
+        res = self.services.get(identifier, [])
         if len(res) == 0:
             return (False, None)
         if len([s for s in res if s.service_name == res[0].service_name]) != len(res):
@@ -503,14 +503,24 @@ class ClientProxy(object):
         proxies = proxies_to_thrift(proxies)
         proxy = self.app.lookup_proxy_port(self.service.actual_endpoint)
         if callsite.service.is_proxied() or proxy:
-            proxy = callsite.service.get_proxy_client() if not actual else generate_proxy_client(proxy)
+            proxy = callsite.service.get_proxy_client() if not proxy else generate_proxy_client(proxy)
             tracker = track_traffic(proxy)
             payload = serialization.SerializeThriftMsg(callsite.to_thrift_object())
+            c = Annotated(port_configurations=proxies, from_proxy_name=self.app.name)
+            blah = serialization.SerializeThriftMsg(c)
+            idlen = len(blah)
             v1 = len(identities) + len(proxies)
             request = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies, from_proxy_name=self.app.name)
             pause = datetime.datetime.now()
             annotated_res = proxy.execute(request)
             resume = datetime.datetime.now()
+            c = Annotated(port_configurations=annotated_res.port_configurations, from_proxy_name=annotated_res.from_proxy_name)
+            blah = ''.join([serialization.SerializeThriftMsg(ar) for ar in annotated_res.port_configurations])
+            #print "--%s-- --" % blah.encode('utf-8')
+            idlen += len(blah)
+            #print "%s--" % idlen 
+            network_bytes.write("%s\n" % idlen)
+            network_bytes.flush()
             identity_attributes = annotated_res.identity_attributes
             identities = thrift_map_to_identities(identity_attributes)
             proxies = annotated_res.port_configurations
@@ -561,7 +571,9 @@ class ServerProxyHandler(object):
             (identities, proxies) = identities
         proxies = proxies_to_thrift(proxies)
         payload = serialization.serialize_python(callsite.result) # serialization.SerializeThriftMsg(callsite.to_thrift_object())
-        return Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies, from_proxy_name=self.server_proxy.app.name)
+        s = Annotated(original_payload=payload, identity_attributes=identities_to_thrift_map(identities), port_configurations=proxies, from_proxy_name=self.server_proxy.app.name)
+        #print s
+        return s
 
     def get_identity_attributes(self, id):
         raise ValueError("XXX todo")

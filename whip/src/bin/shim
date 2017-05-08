@@ -7,4 +7,4 @@ HOSTPLATFORM=linux
 export SHIM_CLIENT_PORT=9090 
 export SHIM_CLIENT_ADDRESS=localhost 
 export LD_LIBRARY_PATH=/usr/local/lib
-LD_PRELOAD=$BASEDIR/../src/shim/$HOSTPLATFORM/libshim.so $*
+LD_PRELOAD=$BASEDIR/../shim/$HOSTPLATFORM/libshim.so $*

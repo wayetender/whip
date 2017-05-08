@@ -16,6 +16,9 @@ from util import THttpSecureServer
 
 logger = logging.getLogger(__name__)
 
+network_times = open('times', 'w')
+network_times.truncate()
+
 def make_method(self, client_proxy, nm):
     def m(self, *args):
         result = client_proxy.on_unproxied_request(nm, list(args), extra={'path': THttpSecureServer.lastPath})
@@ -150,7 +153,8 @@ class ThriftProxyTerminus(ProxyTerminus):
         m = getattr(client, callsite.opname)
         res = m(*list(callsite.args))
         trans.close()
-        tempTime = datetime.datetime.now() - startTime
+        tempTime = (datetime.datetime.now() - startTime).total_seconds() * 1000
+        network_times.write("%s\n" % tempTime)
         #print "time for %s: %f ms" % (callsite.opname, tempTime.total_seconds() * 1000)
         #print "res is %s" % res
         return res

@@ -43,6 +43,10 @@ logging.getLogger('spyne').setLevel(logging.CRITICAL)
 logging.getLogger('spyne').setLevel(logging.INFO)
 
 
+network_times = open('times', 'w')
+network_times.truncate()
+
+
 class FakeSudsNode(SudsObject):
 
     def __init__(self, data):
@@ -424,10 +428,15 @@ class SoapProxyTerminus(ProxyTerminus):
         '''returns the result'''
         s = self.client.service
         m = getattr(s, callsite.opname)
+
+        startTime = datetime.datetime.now()
         #tempTime = datetime.datetime.now() - startTime
         res = m(*list(callsite.args))
-        #startTime = datetime.datetime.now()
         res = self.unwrap_arrays(res)
+
+        tempTime = (datetime.datetime.now() - startTime).total_seconds() * 1000
+        network_times.write("%s\n" % tempTime)
+
         #print "res is %s" % res
         return res
 

@@ -1,39 +1,32 @@
 
+
 service Chess {
 
-    ghost Game {
-        @identifier gameId,
-        @immutable outcome,
-        @immutable white,
-    }
-
     GetMyGames(username, password)
-    @identifies games:Game[] by {{ for game in result: yield (game['id']) }}
-    @initializes {{
-        for game in result:
-            gameGhost = games[game['id']]
-            initialize(gameGhost, 'white', game['white'])
-            if game['result'] != 'Ongoing':
-                initialize(gameGhost, 'outcome', game['result']);
+    @identifies g:Chess[] by {{ 
+        for game in result: 
+            nmoves = len(split('[0-9]+\. ', game['moves']))
+            yield ('127.0.0.1:8000', str((game['id'], game['drawOffered'], nmoves)))
+            if game['drawOffered']:
+                 yield ('127.0.0.1:8000', str((game['id'], False, nmoves)))
     }}
-    
-    MakeAMove(username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage)
-    @identifies game:Game by {{ gameId }}
-    @precondition {{ isUnknown(game.outcome) }}
-    @precondition {{ not acceptDraw or game.drawOffered }}
-    #@precondition {{ acceptDraw or resign or movecount == len(split('[0-9]+\. ', game.moves)) }}
     @postcondition {{
-        if not (acceptDraw or resign or movecount % 2 == (1 if username == game.white else 0)):
-            return result == 'InvalidMoveNumber'
-        else:
-            return result == 'Success'
-    }}
-    @initializes {{
-        if result == 'Success' and acceptDraw:
-            initialize(game, 'outcome', 'Draw')
-        if result == 'Success' and resign:
-            initialize(game, 'outcome', 'BlackWins' if username == game.white else 'WhiteWins')
+        import chess.pgn
+        for game in result:
+            try: chess_pgn_read_game(StringIO(game['moves']))
+            except: assert False
+        return True
     }}
 
     MakeGame(whitePlayer, blackPlayer)
+    @identifies gas:Chess[] by {{ 
+        yield ('127.0.0.1:8000', str((result, False, 0)))
+    }}
+
+    MakeAMove(username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage)
+    @where this is {{  str((gameId, acceptDraw, movecount)) }}
+    @postcondition {{ result != "NoDrawWasOffered" }}
+    @postcondition {{ result != "InvalidGameID" }}
+
+
 }
