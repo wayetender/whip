@@ -2,11 +2,8 @@ FROM python:2.7
 MAINTAINER Lucas Waye <lucas@lucaswaye.com>
 
 WORKDIR /whip
-
 COPY src src
-
 ENV THRIFT_VERSION 0.9.3
-
 RUN buildDeps=" \
 		automake \
 		bison \
