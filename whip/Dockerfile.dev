@@ -1,12 +1,8 @@
 FROM python:2.7
 MAINTAINER Lucas Waye <lucas@lucaswaye.com>
 
-WORKDIR /whip
-
-COPY src src
-
+# Thrift-specific
 ENV THRIFT_VERSION 0.9.3
-
 RUN buildDeps=" \
 		automake \
 		bison \
@@ -34,12 +30,21 @@ RUN buildDeps=" \
 	&& make \
 	&& make install \
 	&& cd / \
-	&& rm -rf /usr/src/thrift \
-	&& pip install -r /whip/src/adapter/requirements.txt \
-	&& /whip/src/adapter/update-stubs.sh \
-	&& /whip/src/adapter/regen-parser.sh \
-	&& cd /whip/src/shim/linux \
-	&& make \
-	&& apt-get purge -y --auto-remove $buildDeps
+	&& rm -rf /usr/src/thrift
+
+# Whip-specific
+WORKDIR /whip
+
+COPY src/adapter/requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
+COPY src src
+RUN src/adapter/update-stubs.sh \
+	&& src/adapter/regen-parser.sh
+
+RUN cd /whip/src/shim/linux \
+	&& make
 
 ENV PATH "$PATH:/whip/src/bin"
+VOLUME /whip
+

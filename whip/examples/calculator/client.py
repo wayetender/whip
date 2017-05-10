@@ -1,40 +1,81 @@
-from suds.client import Client
-import datetime
-import gc
+import sys
+import common
+import logging
+import uuid
+import time
+import random
+import traceback
+from calc import Adder, AdderDiscovery
+from calc.ttypes import *
 
-def start():
-    global last, checkpoints
-    last = datetime.datetime.now()
-    checkpoints = []
+AdderClient = Adder.Client
+AdderDiscoveryClient = AdderDiscovery.Client
 
-def checkpoint(n):
-    global last, checkpoints
-    check = datetime.datetime.now()
-    checkpoints.append((n, (check - last).total_seconds() * 1000))
-    last = check
+def help():
+    print "Available Commands:"
+    print "signup [username] [password]    - Register a new user account"
+    print "login [username] [password]     - Login to a user account"
+    print "dumb [h] [p]                    - Perform dumb(h, p) "
+    print "add [n1] [n2]                   - Get a random adder and compute n1+n2"
+    print "register_adder [host] [port]    - Register new adder service"
+    print "quit                            - Exits the program"
 
+def get_adder_service(discovery, sid):
+    hostinfo = discovery.get_adder_info(sid)
+    return common.get_client_with_defaults(AdderClient, hostinfo.host, hostinfo.port)
 
 if __name__ == '__main__':
-    url = 'http://localhost:8000/?wsdl'
-    client = Client(url)
-    client.options.cache.clear()
-    #gc.disable()
+    if len(sys.argv) < 3:
+        print "Usage: python client.py DISCOVERY_IP DISCOVERY_PORT"
+        sys.exit(1)
 
-    sid = client.service.login('test', 3)
-
-    MAX = 10
-    CHECKPOINT_EVERY = 2
-    n = 1
-    start()
-    while n <= MAX:
-        assert client.service.add(sid, 2, 3) == 8
-        if n % CHECKPOINT_EVERY == 0:
-            checkpoint(n)
-        n += 1
-        gc.collect()
-
-    for (k,v) in checkpoints:
-        #print "\t%d\t%f" % (k, v)
-        print "\t%f" % (v)
-
-
+    discovery_ip = sys.argv[1]
+    discovery_port = int(sys.argv[2])
+    discovery = common.get_client_with_defaults(AdderDiscoveryClient, discovery_ip, discovery_port)
+    print "connected to discovery service %s:%d" % (discovery_ip, discovery_port)
+    help()
+    sid = None
+    line = raw_input("> ")
+    while line != 'quit':
+        parts = line.split(' ')
+        cmd = parts[0]
+        try:
+            if cmd == 'signup':
+                if discovery.signup(parts[1], parts[2]):
+                    print 'Success'
+                else:
+                    print "Account already taken"
+            elif cmd == 'login':
+                sid = discovery.login(parts[1], parts[2]) #+ 'wrong'
+                if 'error' in sid:
+                    print "Could not login: %s" % sid
+                    sid = None
+                else:
+                    print "Successfully logged in"
+            elif cmd == 'add':
+                if not sid:
+                    print "Must login first"
+                else:
+                    adder = get_adder_service(discovery, sid)
+                    result = adder.add(int(parts[1]), int(parts[2]))
+                    print "%s + %s = %d" % (parts[1], parts[2], result)
+            elif cmd == 'dumb':
+                discovery.dumb(parts[1], int(parts[2]))
+                print "Performed dumb(%s, %s)" % (parts[1], parts[2])
+            elif cmd == 'register_adder':
+                if not sid:
+                    print "Must login first"
+                else:
+                    discovery.register_adder(sid, parts[1], int(parts[2]))
+                    print "successfully registered adder service"
+            else:
+                print 'unrecognized command'
+                help()
+            line = raw_input("> ")
+        except KeyboardInterrupt:
+            line = 'quit'
+        except:
+            error = sys.exc_info()
+            print "error: ", error[0]
+            traceback.print_tb(error[2])
+            line = raw_input("> ")
