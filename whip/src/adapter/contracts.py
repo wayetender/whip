@@ -8,10 +8,24 @@ from util.eval import eval_code, is_unknown, AssertionFailure, rewrite_for_unkno
 #from pyv8 import PyV8
 import suds
 import datetime
+import socket
+import types
 
 logger = logging.getLogger(__name__)
 
 timings = {}
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+WhipMsg = "[" + bcolors.OKGREEN + bcolors.BOLD + "Whip" + bcolors.ENDC + "] "
 
 class SpecResolver(object):
     def __init__(self, spec_file):
@@ -91,7 +105,6 @@ class Registry(object):
         fromhttppath = None
         if 'http' in identifier:
             from urlparse import urlparse
-            import socket
             o = urlparse(identifier)
             h = o.netloc.split(':')[0]
             ip = socket.gethostbyname_ex(h)[2][0]
@@ -122,13 +135,14 @@ class Registry(object):
         #return self.identities[key]
 
 def report_error(registry, msg, identities, env={}, callsite = None):
-    msg = "contract failure\n" + msg
+    msg = WhipMsg + bcolors.FAIL + "Contract Failure: " + bcolors.ENDC + msg
+    msg += bcolors.WARNING
     if callsite:
-        msg += "\n occurring at " + str(callsite.service)
+        msg += "\n\t Occurring at: " + bcolors.ENDC + str(callsite.service)
     if len(env) > 0:
-        msg += "\n Variables: \n"
+        msg += bcolors.WARNING + "\n\t Variables: \n" + bcolors.ENDC
         for k, v in env.items():
-            if k.startswith('_'):
+            if k.startswith('_') or type(v) == types.FunctionType:
                 continue
             if hasattr(v, 'state'):
                 msg += " - %s = Ghost {\n" % k
@@ -136,10 +150,11 @@ def report_error(registry, msg, identities, env={}, callsite = None):
                     msg += "    - %s = %s (set in %s)\n" % (k1,v1[0], v1[1].op_name)
                 msg += "    }\n" 
             else:
-                msg += "  - %s = %s\n" % (k, v)
+                msg += "\t   - %s%s%s = %s%s%s\n" % (bcolors.UNDERLINE, k, bcolors.ENDC, bcolors.OKBLUE, v, bcolors.ENDC)
     #for identity in dict(identities).values():
     #    msg += print_trace("", registry, identity, {})
-    logger.warn(msg)
+    msg += bcolors.ENDC
+    print msg
     
 def print_trace(depth, registry, identity, seen):
     if (identity.identity.identifier) not in seen:
@@ -223,6 +238,7 @@ class ContractsTerminal(proxy.Terminal):
         assert 'mapsto' in config
         service_decl = self.resolver.resolve_service(config['mapsto'])
         s = ContractService(service.proxy_endpoint, service.actual_endpoint, service_decl, blame_label)
+        s.knownbyport = service.knownbyport
         self.endpoint_to_services[config['actual']] = s
         if hasattr(service, 'overridden_id'):
             s.overridden_id = service.overridden_id
@@ -250,6 +266,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
     def register_proxy(self, proxy_config, blame_label):
         if type(blame_label) != list:
             blame_label = [blame_label]
+        #actual = socket.gethostbyname(proxy_config['actual'][0])
+        #proxy_config['actual'] = (actual, proxy_config['actual'][1])
         identifier = "%s:%s" % (proxy_config['actual']) if 'identifier' not in proxy_config else proxy_config['identifier']
         (_,s) = self.lookup_service(identifier)
         if s:
@@ -262,10 +280,10 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             
             if type(s) != list and s.service_name == proxy_config['mapsto']:
                 if set(blame_label + s.blame_labels) != set(s.blame_labels):
-                    print "--- merging blame label %s in with %s" % (blame_label, s)
+                    #print "--- merging blame label %s in with %s" % (blame_label, s)
                     s.blame_labels = list(set(s.blame_labels + blame_label))
             else:
-                print "--- conflict merge on %s" % (proxy_config,)
+                logger.warn("--- conflict merge on %s" % (proxy_config,))
                 (sp, _) = self.terminal.generate_terminus(proxy_config, blame_label)
                 servicelist = self.services.get(sp.overridden_id, [])
                 servicelist.append(sp)
@@ -417,7 +435,6 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         if len(index) > 0: index = '?%s' % (index,)
         if 'http' in identifier:
             from urlparse import urlparse
-            import socket
             o = urlparse(identifier)
             h = o.netloc.split(':')[0]
             ip = socket.gethostbyname_ex(h)[2][0]
@@ -500,7 +517,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             #    report_error(self.registry, msg, references)
             return ([], proxies)
         else:
-            logger.warn("unknown op: %s" % callsite.opname)
+            #logger.warn("unknown op: %s" % callsite.opname)
             return super(ContractsProxyApplication, self).before_client(callsite)
 
     def before_server(self, callsite, client_attributes, proxies=[]):
@@ -513,6 +530,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         rpc = callsite.service.decl.rpcs[callsite.opname]
         references = self.compute_references(callsite, rpc)
         env = dict(zip(rpc.formals, callsite.args))
+        #print "i'm getting this from %s" % (callsite.from_proxy_name,)
         blame_label = self.mark_this_service(env, callsite, rpc, callsite.from_proxy_name)
         #print "--> server: blame label: %s" % blame_label
         self.handle_references(references,blame_label,proxies)
@@ -547,7 +565,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                 if not imported:
                     proxy_config = self.generate_proxy_config(r[1].identity.name, r[1].identity.identifier)
                     #print "--> registering locally %s" % (proxy_config,)
-                    self.register_proxy(proxy_config, blame_label)
+                    bl = s.blame_labels if s else blame_label
+                    self.register_proxy(proxy_config, bl)
         for r in computed:
             if isinstance(r[1], proxy.Attribute):
                 #print "$$$"

@@ -13,6 +13,7 @@ from util import serialization
 #from util.js import Unknown, unwrap
 from util.eval import Unknown, unwrap
 #from pyv8 import PyV8
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +253,7 @@ class Service(object):
         self.actual_endpoint = actual_endpoint
         self.service_name = service_name
         self.overridden_id = "%s:%s" % self.actual_endpoint
+        self.knownbyport = None
 
     def is_proxied(self):
         return self.proxy_endpoint != None
@@ -312,6 +314,8 @@ class Terminal(object):
         s = Service(config.get('proxiedby', None), config['actual'])
         if 'identifier' in config:
             s.overridden_id = config['identifier']
+        if 'knownbyport' in config:
+            s.knownbyport = config['knownbyport']
         if s not in self.ends:
             if 'using' in config:
                 interpreter = config['using'][0]
@@ -397,7 +401,9 @@ class LocalRedirector(Redirector):
         # removed to support sharding on a single IP endpoint
         #if actual_endpoint in self.redirections:
         #    raise ValueError("already redirecting %s" % (actual_endpoint,))
-        logger.info("Registering proxy endpoint %s for actual endpoint %s" % (proxy_endpoint, actual_endpoint))
+        actual_ip = socket.gethostbyname(actual_endpoint[0])
+        actual_endpoint = (actual_ip, actual_endpoint[1])
+        #logger.info("Registering proxy endpoint %s for actual endpoint %s" % (proxy_endpoint, actual_endpoint))
         if '*' in actual_endpoint[0]:
             p = actual_endpoint[1]
             for i in xrange(0,255):
@@ -483,9 +489,13 @@ class ClientProxy(object):
         return self.terminus
 
     def accept_unproxied_requests(self):
+        if self.service.knownbyport:
+            proxy_ep = ('0.0.0.0', self.service.knownbyport)
+        else:
+            proxy_ep = None
         self.app.redirector.register_redirection_port( \
             self.service.get_actual_endpoint(), \
-            self.terminus.serve_requests(self))
+            self.terminus.serve_requests(self, proxy_ep))
 
     def on_unproxied_request(self, opname, args, extra={}):
         '''returns only the result'''

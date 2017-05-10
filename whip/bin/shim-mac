@@ -1,9 +1,0 @@
-#!/bin/sh
-
-BASEDIR=$(dirname $0)
-
-HOSTPLATFORM=mac
-
-export SHIM_CLIENT_PORT=9090 
-export SHIM_CLIENT_ADDRESS=localhost 
-DYLD_INSERT_LIBRARIES=$BASEDIR/../src/shim/$HOSTPLATFORM/libshim.dylib $*

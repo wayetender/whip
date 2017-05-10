@@ -1,8 +1,8 @@
 FROM python:2.7
 MAINTAINER Lucas Waye <lucas@lucaswaye.com>
 
+# Thrift-specific
 ENV THRIFT_VERSION 0.9.3
-
 RUN buildDeps=" \
 		automake \
 		bison \
@@ -26,26 +26,25 @@ RUN buildDeps=" \
 	&& tar zxf thrift.tar.gz -C /usr/src/thrift --strip-components=1 \
 	&& rm thrift.tar.gz \
 	&& cd /usr/src/thrift \
-	&& ./configure  --without-python --without-cpp \
+	&& ./configure  --without-python --with-cpp \
 	&& make \
 	&& make install \
 	&& cd / \
-	&& rm -rf /usr/src/thrift \
-	&& curl -k -sSL "https://storage.googleapis.com/golang/go1.4.linux-amd64.tar.gz" -o go.tar.gz \
-	&& tar xzf go.tar.gz \
-	&& rm go.tar.gz \
-	&& cp go/bin/gofmt /usr/bin/gofmt \
-	&& rm -rf go \
-	&& apt-get purge -y --auto-remove $buildDeps
+	&& rm -rf /usr/src/thrift
 
+# Whip-specific
 WORKDIR /whip
 
+COPY src/adapter/requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
 COPY src src
-RUN ["pip", "install", "-r", "src/adapter/requirements.txt"]
-RUN ["src/adapter/update-stubs.sh"]
-RUN ["src/adapter/regen-parser.sh"]
+RUN src/adapter/update-stubs.sh \
+	&& src/adapter/regen-parser.sh
+
+RUN cd /whip/src/shim/linux \
+	&& make
+
 ENV PATH "$PATH:/whip/src/bin"
-
-COPY examples examples
-
+VOLUME /whip
 

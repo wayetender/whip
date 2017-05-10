@@ -53,4 +53,3 @@ if __name__ == '__main__':
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 38000
     logger.info("adder discovery service listening on %d" % port)
     common.init_with_defaults_and_run_forever(processor, port)
-

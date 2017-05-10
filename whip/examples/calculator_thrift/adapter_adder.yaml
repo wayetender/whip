@@ -1,0 +1,10 @@
+name: adder
+redirector_port: 9090
+spec: calcthrift.spec
+interpreters:
+  Adder: thrift(idl='calc.thrift',ns='calc',protocol='binary',transport='framed')
+  AdderDiscovery: thrift(idl='calc.thrift',ns='calc',protocol='binary',transport='framed')
+client_proxies:
+  - discovery:8000 proxiedby discovery:38000 mapstoservice AdderDiscovery
+server_proxies:
+  - adder:8001 proxiedby adder:38001 mapstoservice Adder

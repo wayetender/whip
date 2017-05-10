@@ -7,6 +7,8 @@ from proxy import LocalRedirector
 import logging
 import pickle
 import base64
+import os
+import time
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)3d %(funcName)20s() -- %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
@@ -39,20 +41,23 @@ if __name__ == '__main__':
     REDIRECTOR_BYTESIZE = 59
     try:
         while True:
-            line = raw_input()
-            if line == '':
-                continue
-            elif line == 'traffic':
-                print >> sys.stderr, base64.b64encode(pickle.dumps(app.bytesperop))
-            elif line == 'ghosts':
-                print >> sys.stderr, base64.b64encode(pickle.dumps(app.ghostsperop))
-            elif line == 'timing':
-                print >> sys.stderr, base64.b64encode(pickle.dumps(app.timeperop))
-            elif line == 'contracts':
-                print >> sys.stderr, base64.b64encode(pickle.dumps(contracts.timings))
-            elif line == 'redirector':
-                print >> sys.stderr, base64.b64encode(pickle.dumps(redirector.requests * REDIRECTOR_BYTESIZE))
+            if os.getenv('SHOW_DIAGS_INTERACTIVE', False):
+                line = raw_input()
+                if line == '':
+                    continue
+                elif line == 'traffic':
+                    print >> sys.stderr, base64.b64encode(pickle.dumps(app.bytesperop))
+                elif line == 'ghosts':
+                    print >> sys.stderr, base64.b64encode(pickle.dumps(app.ghostsperop))
+                elif line == 'timing':
+                    print >> sys.stderr, base64.b64encode(pickle.dumps(app.timeperop))
+                elif line == 'contracts':
+                    print >> sys.stderr, base64.b64encode(pickle.dumps(contracts.timings))
+                elif line == 'redirector':
+                    print >> sys.stderr, base64.b64encode(pickle.dumps(redirector.requests * REDIRECTOR_BYTESIZE))
+                else:
+                    continue
             else:
-                continue
+                time.sleep(1)
     except KeyboardInterrupt:
         print ""

@@ -48,9 +48,9 @@ int connect(int sockfd, const struct sockaddr *res, socklen_t addrlen)
     int port = ntohs(((struct sockaddr_in*)res)->sin_port);
     char address[1024] = "";
 
-    if (port == 9090) {
-        return original_connect(sockfd, res, addrlen);
-    }
+    // if (port == 9090) {
+    //     return original_connect(sockfd, res, addrlen);
+    // }
     
     TTransport* trans;
     RedirectionClient* client = NULL;
@@ -80,34 +80,36 @@ int connect(int sockfd, const struct sockaddr *res, socklen_t addrlen)
     inet_ntop(AF_INET, &((struct sockaddr_in*)res)->sin_addr, address, 1024);
     // try 
     // {
-        RedirectionInfo info;
-        trans->open();
-        //fprintf(stderr, "getting redirection info for %s:%d\n", address, port);
-        client->get_redirection_info(info, address, port);
-        trans->close();
-        if (info.is_proxied)
-        {
-            struct addrinfo hints, *server_info;
-            memset(&hints, 0, sizeof(hints));
-            hints.ai_family = AF_INET;
-            hints.ai_socktype = SOCK_STREAM;
-            const char* port_str = boost::lexical_cast<std::string>(info.port).c_str();
-            //fprintf(stderr, "redirecting to %s:%s\n", info.address.c_str(), port_str);
-            error = getaddrinfo(info.address.c_str(), port_str, &hints, &server_info);
-            if (error)
+        if (port != 53) {   // dns
+            RedirectionInfo info;
+            trans->open();
+            //fprintf(stderr, "getting redirection info for %s:%d\n", address, port);
+            client->get_redirection_info(info, address, port);
+            trans->close();
+            if (info.is_proxied)
             {
-                fprintf(stderr, "error: %s\n", gai_strerror(error));
-                client = NULL;
+                struct addrinfo hints, *server_info;
+                memset(&hints, 0, sizeof(hints));
+                hints.ai_family = AF_INET;
+                hints.ai_socktype = SOCK_STREAM;
+                const char* port_str = boost::lexical_cast<std::string>(info.port).c_str();
+                //fprintf(stderr, "redirecting to %s:%s\n", info.address.c_str(), port_str);
+                error = getaddrinfo(info.address.c_str(), port_str, &hints, &server_info);
+                if (error)
+                {
+                    fprintf(stderr, "error: %s\n", gai_strerror(error));
+                    client = NULL;
+                }
+                else
+                {
+                    //checking for error here is a bad idea due to nonblocking sockets
+                    return original_connect(sockfd, server_info->ai_addr, server_info->ai_addrlen);   
+                }
             }
             else
             {
-                //checking for error here is a bad idea due to nonblocking sockets
-                return original_connect(sockfd, server_info->ai_addr, server_info->ai_addrlen);   
+                fprintf(stderr, "warning: connection to %s:%d is not listed as proxied\n", address, port);
             }
-        }
-        else
-        {
-            fprintf(stderr, "warning: connection to %s:%d is not listed as proxied\n", address, port);
         }
     // } 
     // catch(...) 

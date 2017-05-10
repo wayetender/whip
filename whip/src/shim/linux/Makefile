@@ -8,10 +8,7 @@ INC := -I$(THRIFT_DIR) -I$(BOOST_DIR) -Igen-cpp
 
 .PHONY: all clean
 
-all: gen-cpp libshim.so
-
-gen-cpp:
-	thrift -gen cpp ../clientprotocol.thrift
+all: libshim.so
 
 %.a: %.cpp
 	$(CXX) -std=c++11 -fPIC -Wall -DHAVE_INTTYPES_H -DHAVE_NETINET_IN_H $(INC) -c $< -o $@

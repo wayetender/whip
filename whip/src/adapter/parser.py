@@ -112,6 +112,7 @@ reserved = {
    'ghost' : 'GHOST',
    'mapstoservice' : 'MAPSTO',
    'proxiedby' : 'PROXIEDBY',
+   'knownbyport': 'KNOWNBYPORT',
    'using' : 'USING',
    'for' : 'FOR',
    'to' : 'TO',
@@ -124,7 +125,7 @@ reserved = {
 }
 
 tokens = [
-    'PRECONDITION_ONLY', 'PRECONDITION_FULL', 'POSTCONDITION_ONLY', 'POSTCONDITION_FULL', 'IDENTIFIES', 'UPDATES', 'INVARIANT', 'IMMUTABLE', 'IDENTIFIERTAG', 'INITIALIZES', 'WHERE', # tags
+    'PRECONDITION_ONLY', 'PRECONDITION_FULL', 'POSTCONDITION_ONLY', 'POSTCONDITION_FULL', 'IDENTIFIES', 'UPDATES', 'INVARIANT', 'IMMUTABLE', 'IDENTIFIERTAG', 'INITIALIZES', 'WHERE',  # tags
     'COMMA', 'DOT', 'EQUALS', 'COLON',   # punctuation
     'LBRACE', 'RBRACE', 'LPAREN', 'RPAREN', 'LSQUARE', 'RSQUARE', 'LANGLE', 'RANGLE',   # brackets
     'STRING', 'BOOLEAN', 'INTEGER', 'DECIMAL', 'IP',  # literals
@@ -436,12 +437,17 @@ def p_ghost_requires(p):
 
 
 def p_proxystring(p):
-    'proxystring : IP COLON INTEGER proxyargs'
+    '''proxystring : IP COLON INTEGER proxyargs
+        | IDENTIFIER COLON INTEGER proxyargs'''
     p[0] = ('proxy', dict([('actual', (p[1], p[3]))] + p[4]))
 
 def p_proxyargs_withpath(p):
     'proxyargs : proxyargs FROMHTTPPATH STRING'
     p[0] = p[1] + [('fromhttppath', p[3])]
+
+def p_proxyargs_withknownbyport(p):
+    'proxyargs : proxyargs KNOWNBYPORT INTEGER'
+    p[0] = p[1] + [('knownbyport', p[3])]
 
 def p_using(p):
     'usinginterp : IDENTIFIER LPAREN params RPAREN'
@@ -456,7 +462,8 @@ def p_proxyargs_mapsto(p):
     p[0] = p[1] + [('mapsto', p[3])]
 
 def p_proxyargs_proxiedby(p):
-    'proxyargs : proxyargs PROXIEDBY IP COLON INTEGER'
+    '''proxyargs : proxyargs PROXIEDBY IP COLON INTEGER
+        | proxyargs PROXIEDBY IDENTIFIER COLON INTEGER'''
     p[0] = p[1] + [('proxiedby', (p[3], p[5]))]
 
 def p_proxyargs_empty(p):

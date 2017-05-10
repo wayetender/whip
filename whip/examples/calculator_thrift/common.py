@@ -65,11 +65,11 @@ def init(*args, **kwargs):
     return initialize_server(*args, **kwargs)
 
 def init_with_defaults(processor, port, **kwargs):
-    return init(processor, port, 'framed', 'fast', 'threaded', **kwargs)
+    return init(processor, port, 'framed', 'binary', 'threaded', **kwargs)
 
 def get_client_with_defaults(cls, ip, port):
     transport = get_transport(ip, port, framed = True)
-    protocol = get_protocol(transport, 'fast')
+    protocol = get_protocol(transport, 'binary')
     return cls(protocol)
 
 def run_forever(server):
