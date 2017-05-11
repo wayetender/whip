@@ -58,17 +58,59 @@ var APP = APP || {};
           id: "spec-full-service",
           steps: [
             {
-              title: "My Header",
-              content: "This is the header of my page.",
+              title: "Service Contracts",
+              content: "The <code>service { ... }</code> block defines the contracts on a service interface.",
               target: "spec-full-service",
-              placement: "right"
+              placement: "right",
+              onShow: function() {
+                $('#spec-full-service').css('border', '1px dashed white');
+              },
+              onNext: function() {
+                $('#spec-full-service').css('border', 'none');  
+              }
             },
             {
-              title: "My content",
-              content: "Here is where I put my content.",
-              target: "spec-service-test",
+              title: "Service Contracts",
+              content: "This is the <code>Login</code> service",
+              target: "spec-service-login",
               placement: "bottom"
-            }
+            },
+            {
+              title: "Service Contracts",
+              content: "... and this is the <code>User</code> service",
+              target: "spec-service-user",
+              placement: "bottom"
+            },
+            {
+              title: "Service Operations",
+              content: "Services contain operations. The <code>Login</code> service exposes a <code>register</code> operation which takes a username, email, and password.",
+              target: "spec-register-op",
+              placement: "bottom"
+            },
+            {
+              title: "Operation Contracts",
+              content: "Each operation can include preconditions and postconditions, defined by executable Python code. This precondition checks that the provided email is valid and the password is greater than 7 characters.",
+              target: "spec-register-pre",
+              placement: "bottom"
+            },
+            {
+              title: "Operation Contracts",
+              content: "Here, the <code>login</code> operation must return either <code>'success'</code> or <code>'failure'</code> in its status field.",
+              target: "spec-login-post",
+              placement: "top"
+            },
+            {
+              title: "Higher-order contracts",
+              content: "Additionally, operations may <em>identify</em> other services. In this example, the server at <code>userServiceURL</code> denotes a <code>User</code> service.",
+              target: "spec-login-id",
+              placement: "bottom"
+            },
+            {
+              title: "Higher-order Contracts",
+              content: "Services can be <em>indexed</em> by a parameter to an operation. Here the <code>authToken</code> is used as the index for the service. Indexes help track how a service learned about another service.",
+              target: "spec-where-clause",
+              placement: "bottom"
+            },
           ]
         };
 

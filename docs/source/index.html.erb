@@ -5,14 +5,13 @@
 				<canvas id="demoCanvas0" width="1000" height="500" style=""></canvas>
 				<div class="col-lg-6 col-md-6">
 					<h2 class="rls-l">
-					Safe composition of <br> modern services.
+					Safe composition of <br> microservices.
 					</h2>
 				</div>
 				<div class="jumbo-logo-wrap col-lg-offset-1 col-lg-5 col-md-6 hidden-xs hidden-sm">
 					<div class="jumbo-logo"></div>
 					
 				</div>
-				<!-- <p><a class="btn btn-primary btn-lg">Learn more &raquo;</a></p> -->
 			</div>
 			</div>
 			<div class="jumbotron-dots"></div>
@@ -25,13 +24,12 @@
 			<div class="container">
 				<div class="col-lg-6 col-md-6">
 					<h2 class="rls-l">
-					Safe composition of modern services.
+					Safe composition of microservices.
 					</h2>
 				</div>
 				<div class="jumbo-logo-wrap col-lg-offset-1 col-lg-5 col-md-6 hidden-xs hidden-sm">
 					<div class="jumbo-logo"></div>
 				</div>
-				<!-- <p><a class="btn btn-primary btn-lg">Learn more &raquo;</a></p> -->
 			</div>
 			<div class="jumbotron-dots"></div>
 	</div>
@@ -41,7 +39,7 @@
 	<div class="container">
 		<div class="row double-row">
 			<div class="cols-xs-12 col-lg-12">
-			<p><strong>Whip</strong> is a program that intercepts and checks messages
+			<p><strong>Whip</strong> transparently intercepts and checks messages
 			a service sends and receives against their contracts. 
 			<br>
 			Use <strong>Whip</strong> to find the sources of buggy services.
@@ -115,18 +113,17 @@
 
 
 			<div class="cols-xs-12 col-lg-12 explantion">
-				<pre class="smaller-code"><code><span id="spec-full-service"><span id="spec-service-test"><span class="code-kw">service</span> Login</span> {
-  register(username, email, pass)
-  <span class="code-tag">@requires</span> &laquo;<span class="code-con"> valid_email(email) <span class="code-con-kw">and</span> len(pass) > 7 </span>&raquo;
+				<pre class="smaller-code"><code><div id="spec-full-service"><span class="code-kw">service</span> <span id="spec-service-login">Login</span> {
+  <span id="spec-register-op">register(username, email, pass)</span>
+  <span id="spec-register-pre"><span class="code-tag">@requires</span> &laquo;<span class="code-con"> valid_email(email) <span class="code-con-kw">and</span> len(pass) > 7 </span>&raquo;</span>
   
   login(username, pass)
-  <span class="code-tag">@ensures</span> &laquo;<span class="code-con"> len(username) > 0 </span>&raquo;
-  <span class="code-tag">@identifies</span> User <span class="code-tag">at</span> &laquo; <span class="code-con"><span class="code-con-kw">result</span>.userServiceURL</span> &raquo; <span class="code-tag">indexedby</span> &laquo;<span class="code-con"> <span class="code-con-kw">result</span>.authToken </span>&raquo;
-}</span>
-
-<span class="code-kw">service</span> User {
+  <span id="spec-login-post"><span class="code-tag">@ensures</span> &laquo;<span class="code-con"> <strong>result</strong>.status == 'success' <span class="code-con-kw">or</span> <strong>result</strong>.status == 'failure' </span>&raquo;</span>
+  <span id="spec-login-id"><span class="code-tag">@identifies</span> User <span class="code-tag">at</span> &laquo; <span class="code-con"><span class="code-con-kw">result</span>.userServiceURL</span> &raquo; <span class="code-tag">indexedby</span> &laquo;<span class="code-con"> <span class="code-con-kw">result</span>.authToken </span>&raquo;</span>
+}</div>
+<span class="code-kw">service</span> <span id="spec-service-user">User</span> {
   get_userinfo(authToken)
-  <span class="code-tag">@where index is </span> &laquo;<span class="code-con"> authToken </span> &raquo;
+  <span id="spec-where-clause"><span class="code-tag">@where index is</span> &laquo;<span class="code-con"> authToken</span> &raquo;</span>
   <span class="code-tag">@ensures</span> &laquo;<span class="code-con"> valid_email(<span class="code-con-kw">result</span>.email) </span> &raquo;
 }
 </code></pre>
@@ -143,6 +140,29 @@ Whip monitors contracts at run time by intercepting messages a service sends and
 </div>
 
 		</div>
+
+		<div class="row">
+			<div class="cols-xs-12 col-lg-12 explantion">
+				<pre class="smaller-code"><code><span class="code-tag">name:</span> userinfo.example.com
+<span class="code-tag">contract:</span> authentication.whip
+<span class="code-tag">service_protocols:</span>
+  <span class="code-kw">Login:</span> thrift(<span class="code-con">idl='users.thrift', ns='users', protocol='binary'</span>)
+  <span class="code-kw">User:</span> thrift(<span class="code-con">idl='users.thrift', ns='users', protocol='binary'</span>)
+<span class="code-tag">consuming:</span>
+  - login.example.com:941 <span class="code-tag">mapstoservice</span> <span class="code-kw">Login</span>
+<span class="code-tag">providing:</span>
+  - userinfo.example.com:942 <span class="code-tag">proxiedby</span> userinfo.example.com:943 <span class="code-tag">mapstoservice</span> <span class="code-kw">User</span>
+</code></pre>
+			<div class="code-desc">
+			<h3>Whip Configuration</h3>
+			<p>Whip connects the contract with the wire protocols through a configuration file. 
+			<p>
+			Configuration describes the message formats used by services, the services the program initially knows about and the services it provides itself.
+			</div>
+
+</div>
+
+		</div>
 	</div>
 </div><!-- /#demos -->
 
@@ -152,10 +172,10 @@ Whip monitors contracts at run time by intercepting messages a service sends and
 		    
 			<div class="intro">
 				<div class="left col-xs-12 col-sm-offset-2 col-sm-4">
-					<p>See how Whip works with an example application that you can run locally.</p>
+					<p>See how Whip works with an example application that you can run in your browser.</p>
 				</div>
 				<div class="right col-xs-12 col-sm-6 col-sm-offset-0">
-					<a class="outline-btn purple" href="/">Read the example &#187;</a>
+					<a class="outline-btn purple" href="https://katacoda.com/wayetender/scenarios/whip-calculator-quickstart">Try it now &#187;</a>
 				</div>
 			</div>
 		</div>
