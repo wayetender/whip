@@ -119,7 +119,7 @@ reserved = {
    'if' : 'IF',
    'by' : 'BY',
    'is' : 'IS',
-   'this' : 'THIS',
+   'index' : 'THIS',
    'requires' : 'REQUIRES',
    'fromhttppath' : 'FROMHTTPPATH',
 }
@@ -154,8 +154,8 @@ t_INTEGER       = r'-?[1-9][0-9]*'
 t_DECIMAL       = t_INTEGER + r'\.[0-9]*'
 
 # Tags
-t_PRECONDITION_ONLY = r'@precondition'
-t_POSTCONDITION_ONLY = r'@postcondition'
+t_PRECONDITION_ONLY = r'@requires'
+t_POSTCONDITION_ONLY = r'@ensures'
 t_IDENTIFIES = r'@identifies'
 t_UPDATES = r'@updates'
 t_INVARIANT = r'@invariant'
@@ -378,20 +378,20 @@ def p_postcondition_single(p):
     p[0] = JSTag('postcondition', p[1])
 
 def p_tags_token(p):
-    'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER BY JAVASCRIPT'
-    p[0] = IdentifiesTag(p[4], p[2], p[6], '', False)
+    'tag : IDENTIFIES IDENTIFIER BY JAVASCRIPT'
+    p[0] = IdentifiesTag(p[2], '_', p[4], '', False)
 
 def p_tags_higher_token(p):
-    'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER LANGLE JAVASCRIPT RANGLE BY JAVASCRIPT'
-    p[0] = IdentifiesTag(p[4], p[2], p[9], '', False, higher = p[6])
+    'tag : IDENTIFIES IDENTIFIER LANGLE JAVASCRIPT RANGLE BY JAVASCRIPT'
+    p[0] = IdentifiesTag(p[2], '_', p[7], '', False, higher = p[4])
 
 def p_tags_multiple(p):
-    'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER LSQUARE RSQUARE BY JAVASCRIPT'
-    p[0] = IdentifiesTag(p[4], p[2], p[8], '', True)
+    'tag : IDENTIFIES IDENTIFIER LSQUARE RSQUARE BY JAVASCRIPT'
+    p[0] = IdentifiesTag(p[2], '', p[6], '', True)
 
 def p_tags_token_if(p):
-    'tag : IDENTIFIES IDENTIFIER COLON IDENTIFIER BY JAVASCRIPT IF JAVASCRIPT'
-    p[0] = IdentifiesTag(p[4], p[2], p[6], p[8], False)
+    'tag : IDENTIFIES IDENTIFIER BY JAVASCRIPT IF JAVASCRIPT'
+    p[0] = IdentifiesTag(p[2], '_', p[4], p[6], False)
 
 def p_tags_updates(p):
     'tag : UPDATES IDENTIFIER DOT IDENTIFIER TO JAVASCRIPT'
