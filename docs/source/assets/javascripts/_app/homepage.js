@@ -107,7 +107,7 @@ var APP = APP || {};
             },
             {
               title: "Higher-order Contracts",
-              content: "Services can be <em>indexed</em> by a parameter to an operation. Here the <code>authToken</code> is used as the index for the service. Indexes help track how a service learned about another service.",
+              content: "Services can be <em>indexed</em> by a parameter to an operation. Here the <code>authToken</code> is used as the index for the service. Indexes help ensure a service is properly used.",
               target: "spec-where-clause",
               placement: "bottom"
             },
