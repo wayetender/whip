@@ -119,7 +119,7 @@
   
   login(username, pass)
   <span id="spec-login-post"><span class="code-tag">@ensures</span> &laquo;<span class="code-con"> <strong>result</strong>.status == 'success' <span class="code-con-kw">or</span> <strong>result</strong>.status == 'failure' </span>&raquo;</span>
-  <span id="spec-login-id"><span class="code-tag">@identifies</span> User <span class="code-tag">by</span> &laquo; <span class="code-con"><span class="code-con-kw">(result</span>.userServiceURL, <span class="code-con-kw">result</span>.authToken </span>&raquo;</span>
+  <span id="spec-login-id"><span class="code-tag">@identifies</span> User <span class="code-tag">by</span> &laquo; <span class="code-con">(<span class="code-con-kw">result</span>.userServiceURL, <span class="code-con-kw">result</span>.authToken) </span>&raquo;</span>
 }</div>
 <span class="code-kw">service</span> <span id="spec-service-user">User</span> {
   get_userinfo(authToken)
