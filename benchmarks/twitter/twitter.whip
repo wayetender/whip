@@ -1,0 +1,36 @@
+
+service TwitterTweets {
+
+    /1.1/friends/list.json(request)
+    @where index is {{ 'u' + request['args'].get('user_id', request['args'].get('screen_name')) }}
+    @requires {{ 'user_id' in request['args'] or 'screen_name' in request['args']}}
+    @requires {{ request['args'].get('count', 0) >= 0 }}
+    @requires {{ 'Authorization' in request['headers'] }}
+    @ensures {{ type(result['body']['users']) == list }}
+    @identifies TwitterTweets[] by {{
+        for f in result['body']['users']:
+            yield (request['headers']['Host'], "u" + f['id_str'])
+    }}
+
+    /1.1/statuses/user_timeline.json(request)
+    @where index is {{ 'u' + request['args'].get('user_id', request['args'].get('screen_name')) }}
+    @requires {{ 'Authorization' in request['headers'] }}
+    @requires {{ 'user_id' in request['args'] or 'screen_name' in request['args']}}
+    @identifies TwitterTweets[] by {{
+        for tweet in result['body']:
+            yield (request['headers']['Host'], "t" + tweet['id_str'])
+    }}
+    @ensures {{ 
+        'count' not in request['args'] or \
+            len(result) <= max(200, request['args']['count']) }}
+    @ensures {{
+        for tweet in result['body']: 
+            assert rfc822_parsedate_tz(tweet['created_at']) != None
+        return True
+    }}
+
+    /1.1/statuses/retweet/__id__.json(request)
+    @where index is {{ "t" + request['args']['tweet_id'] }}
+    @ensures {{ 'errors' not in result['body'] }}
+
+}

@@ -1,13 +1,13 @@
-name: twitter-adapter
+name: a
 redirector_port: 9090
-spec: twitter.spec
+spec: twitter.whip
 interpreters:
   TwitterTweets: rest()
 server_proxies:
-  - 199.16.156.*:443 proxiedby 127.0.0.1:8123 mapstoservice TwitterTweets
+   - 127.0.0.1:3912 proxiedby 127.0.0.1:3913 mapstoservice TwitterTweets
+#  - 199.16.156.*:390 proxiedby 127.0.0.1:8123 mapstoservice TwitterTweets
 client_proxies:
-  - 199.16.156.*:443 proxiedby 127.0.0.1:8123 mapstoservice TwitterTweets
-
-
-
+  - 127.0.0.1:3912 proxiedby 127.0.0.1:3913 mapstoservice TwitterTweets
+#   - 127.0.0.1:39102 mapstoservice TwitterTweets
+#  - 199.16.156.*:443 proxiedby 127.0.0.1:8123 mapstoservice TwitterTweets
 

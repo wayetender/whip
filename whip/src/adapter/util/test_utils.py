@@ -47,7 +47,7 @@ class Adapter(Thread):
         self.suppress_next_line = False
 
     def run(self):
-        adapterapp = '%s/../bin/adapter' % os.path.dirname(os.path.abspath(__file__))
+        adapterapp = 'adapter'
         self.p = Popen([adapterapp, self.configfile], stderr=subprocess.PIPE, close_fds=True, stdin=subprocess.PIPE)
         started = False
         for line in iter(self.p.stderr.readline, ''):

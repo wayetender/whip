@@ -1,4 +1,4 @@
-# Whip [![Docker Build](https://img.shields.io/docker/build/wayetender/whip.svg?maxAge=2592000)](https://hub.docker.com/r/wayetender/whip/)
+# Whip [![Docker Build](https://img.shields.io/docker/build/wayetender/whip.svg?maxAge=25920)](https://hub.docker.com/r/wayetender/whip/)
 
 This is the source code for the Whip adapter and Whip shim library.
 

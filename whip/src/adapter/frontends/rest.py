@@ -8,6 +8,7 @@ import socket
 import json
 import threading
 import datetime
+import ssl
 
 import logging
 log = logging.getLogger('werkzeug')
@@ -64,12 +65,13 @@ class RestProxyTerminus(ProxyTerminus):
     def execute_request(self, callsite):
         h = callsite.args[0]['headers']['Host']
         apath = 'https://%s:%s%s' % (h, self.actual_port, callsite.opname) if ':' not in h else "https://%s%s" % (h, callsite.opname)
+        context = ssl._create_unverified_context()
         nrequest = urllib2.Request(apath)
         for (header, v) in callsite.args[0]['headers'].items():
             if header == 'Content-Length' or header == 'Accept-Encoding': continue
             nrequest.add_header(header, v)
         startTime = datetime.datetime.now()
-        proxy_resp = urllib2.urlopen(nrequest)
+        proxy_resp = urllib2.urlopen(nrequest, context=context)
         body = str(proxy_resp.read()).encode('ascii', 'ignore')
         code = proxy_resp.getcode()
         tempTime = (datetime.datetime.now() - startTime).total_seconds() * 1000

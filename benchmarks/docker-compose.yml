@@ -1,0 +1,7 @@
+version: '2'
+services:
+  twitter:
+    build: ./twitter
+    environment:
+      NUM_OPS: 100
+    entrypoint: ./run.sh

@@ -4,8 +4,12 @@ import requests
 from requests_oauthlib import OAuth1
 from urlparse import parse_qs
 import logging
+import sys
+sys.path.append('../')
+import test_utils
+import os
 
-
+requests.packages.urllib3.disable_warnings()
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
 # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
 # The only thing missing will be the response.body which is not logged.
@@ -30,11 +34,11 @@ REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token"
 AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize?oauth_token="
 ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token"
 
-CONSUMER_KEY = "S6WZvjr2WYXipJnSA1JuLdTiQ"
-CONSUMER_SECRET = "gZB5GMin1259Z1pYk0A0BnTytKrO91MLC2HzrebnwAaV4Lzfhz"
+CONSUMER_KEY = "________KEY_________"
+CONSUMER_SECRET = "________SECRET__________"
 
-OAUTH_TOKEN = None
-OAUTH_TOKEN_SECRET = None
+OAUTH_TOKEN = "______________TOKEN____________________"
+OAUTH_TOKEN_SECRET = "_______________SECRET________________"
 
 
 def setup_oauth():
@@ -74,6 +78,18 @@ def get_oauth():
                 resource_owner_secret=OAUTH_TOKEN_SECRET)
     return oauth
 
+nrequests = 0
+
+def runtests(oauth):
+    global nrequests
+    r = test_utils.measure('friends', lambda: requests.get(url="https://127.0.0.1:3912/1.1/friends/list.json?user_id=%s" % nrequests, auth=oauth, verify=False))
+    friend = r.json()["users"][0]["id_str"]
+    r = test_utils.measure('timeline', lambda: requests.get(url="https://127.0.0.1:3912/1.1/statuses/user_timeline.json?user_id=%s" % friend, auth=oauth, verify=False))
+    tweet = r.json()[0]['id_str']
+    r = test_utils.measure('retweet', lambda: requests.get(url="https://127.0.01:3912/1.1/statuses/retweet/__id__.json?tweet_id=%s" % tweet, auth=oauth, verify=False))
+    nrequests += 3
+    
+
 if __name__ == "__main__":
     if not OAUTH_TOKEN:
         token, secret = setup_oauth()
@@ -84,5 +100,28 @@ if __name__ == "__main__":
         oauth = get_oauth()
         #r = requests.get(url="https://localhost:5000/1.1/statuses/mentions_timeline.json", auth=oauth, verify=False)
         
-        r = requests.get(url="https://api.twitter.com/1.1/statuses/mentions_timeline.json", auth=oauth, verify=False)
-        print r.json()
+        NUM_TRIALS = int(os.getenv('NUM_OPS')) / 3
+        print "starting %d trials..." % NUM_TRIALS
+        report = []
+        num_requests = 1
+        
+        #test_utils.setup_adapter_only('adapter.yaml', 1)()
+        for trial in xrange(NUM_TRIALS):
+            runtests(oauth)
+            for [m] in test_utils.measurements.values():
+                print "%s,%s" % (num_requests, m * 1000)
+                num_requests += 1
+            test_utils.measurements.clear()
+            #if trial % 100 == 0:
+            #    print trial
+            #    pass
+                #import gc
+                #gc.collect(2)
+                #mem = process.memory_info()
+                #print mem
+                #print mem / 1024
+            #stats = test_utils.get_adapter_stats()
+            #report.append((traffic, stopwatch, stats))
+            #test_utils.teardown_adapter_only()
+        #    print "Trial %d / %d: %s" % (trial+1, NUM_TRIALS, stopwatch)
+        print "-- End of %d trials --" % NUM_TRIALS
