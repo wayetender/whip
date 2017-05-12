@@ -77,6 +77,7 @@ class RestProxyTerminus(ProxyTerminus):
         tempTime = (datetime.datetime.now() - startTime).total_seconds() * 1000
         
         network_times.write("%s\n" % tempTime)
+        network_times.flush()
         res = {
             'headers': dict(proxy_resp.info()),
             'body': json.loads(body),

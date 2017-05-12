@@ -436,6 +436,7 @@ class SoapProxyTerminus(ProxyTerminus):
 
         tempTime = (datetime.datetime.now() - startTime).total_seconds() * 1000
         network_times.write("%s\n" % tempTime)
+        network_times.flush()
 
         #print "res is %s" % res
         return res

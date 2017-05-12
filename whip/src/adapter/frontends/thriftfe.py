@@ -155,6 +155,7 @@ class ThriftProxyTerminus(ProxyTerminus):
         trans.close()
         tempTime = (datetime.datetime.now() - startTime).total_seconds() * 1000
         network_times.write("%s\n" % tempTime)
+        network_times.flush()
         #print "time for %s: %f ms" % (callsite.opname, tempTime.total_seconds() * 1000)
         #print "res is %s" % res
         return res
