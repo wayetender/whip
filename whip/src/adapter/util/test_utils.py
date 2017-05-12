@@ -47,7 +47,7 @@ class Adapter(Thread):
         self.suppress_next_line = False
 
     def run(self):
-        adapterapp = 'adapter'
+        adapterapp = 'adapter' #% os.path.dirname(os.path.abspath(__file__))
         self.p = Popen([adapterapp, self.configfile], stderr=subprocess.PIPE, close_fds=True, stdin=subprocess.PIPE)
         started = False
         for line in iter(self.p.stderr.readline, ''):
@@ -209,7 +209,8 @@ def setup_adapter_only(configfile, numproxies = 1):
             del os.environ["DYLD_INSERT_LIBRARIES"]
         adapter = Adapter(configfile, numproxies)
         adapter.start()
-        adapter.waitForStartup()
+        #adapter.waitForStartup()
+        time.sleep(1)
     return f
 
 
@@ -250,10 +251,10 @@ def measure(rpc, f):
     global measurements
     n = datetime.datetime.now()
     v = f()
-    diff = (datetime.datetime.now() - n).total_seconds() * 1000
+    diff = (datetime.datetime.now() - n).total_seconds() # * 1000
     d = measurements.get(rpc, [])
     d.append(diff)
-    #measurements[rpc] = d
+    measurements[rpc] = d
     return v
 
 def track_suds_traffic(client, tracker = None):
