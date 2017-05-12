@@ -1,8 +1,8 @@
 FROM wayetender/whip
 
-RUN pip install requests requests-oauthlib psutil
+RUN pip install psutil
 
-WORKDIR /benchmarks/twitter
+WORKDIR /benchmarks/chess
 RUN cp /whip/src/adapter/util/test_utils.py .
 COPY . .
 

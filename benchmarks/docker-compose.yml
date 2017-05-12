@@ -1,7 +1,34 @@
-version: '2'
+version: '3'
 services:
+  parse_results:
+    build: .
+    volumes:
+      - ./results:/results
+    entrypoint: ./gen_charts.sh
+  chess:
+    build: ./chess
+    depends_on:
+      - parse_results
+    environment:
+      NUM_OPS: ${NUM_OPS}
+    volumes:
+      - ./results:/results
+    entrypoint: ./run.sh
   twitter:
     build: ./twitter
+    depends_on:
+      - parse_results
     environment:
-      NUM_OPS: 100
+      NUM_OPS: ${NUM_OPS}
+    volumes:
+      - ./results:/results
+    entrypoint: ./run.sh
+  evernote:
+    build: ./evernote
+    depends_on:
+      - parse_results
+    environment:
+      NUM_OPS: ${NUM_OPS}
+    volumes:
+      - ./results:/results
     entrypoint: ./run.sh

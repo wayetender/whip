@@ -1,6 +1,6 @@
-name: evernote-thrift-adapter
+name: a
 redirector_port: 9090
-spec: evernote.spec
+spec: evernote.whip
 interpreters:
   NoteStore: thrift(idl='evernote-thrift/src/NoteStore.thrift',ns='evernote.edam.notestore',protocol='binary-https',cert='server.pem')
   UserStore: thrift(idl='evernote-thrift/src/UserStore.thrift',ns='evernote.edam.userstore',protocol='binary-https',cert='server.pem')
@@ -8,13 +8,10 @@ server_proxies:
   - 127.0.0.1:9444 fromhttppath '/' proxiedby 127.0.0.1:9441 mapstoservice NoteStore
   - 127.0.0.1:9443 fromhttppath '/' proxiedby 127.0.0.1:9442 mapstoservice UserStore
 client_proxies:
-  # - 127.0.0.1:9444 fromhttppath '/' proxiedby 127.0.0.1:9441 mapstoservice NoteStore
-  # - 127.0.0.1:9443 fromhttppath '/' proxiedby 127.0.0.1:9442 mapstoservice UserStore
-  - 127.0.0.1:9444 fromhttppath '/' mapstoservice NoteStore
-  - 127.0.0.1:9443 fromhttppath '/' mapstoservice UserStore
+   - 127.0.0.1:9444 fromhttppath '/' proxiedby 127.0.0.1:9441 mapstoservice NoteStore
+   - 127.0.0.1:9443 fromhttppath '/' proxiedby 127.0.0.1:9442 mapstoservice UserStore
 
-
-
+# Actual evernote servers:
 # server_proxies:
 #   - 216.104.243.26:443 fromhttppath '/shard/s1/notestore' using thrift(idl='evernote-thrift/src/NoteStore.thrift',ns='evernote.edam.notestore',protocol='binary-https',cert='server.pem') proxiedby 127.0.0.1:9441 mapstoservice NoteStore
 #   - 216.104.243.26:443 fromhttppath '//edam/user' using thrift(idl='evernote-thrift/src/UserStore.thrift',ns='evernote.edam.userstore',protocol='binary-https',cert='server.pem') proxiedby 127.0.0.1:9442 mapstoservice UserStore

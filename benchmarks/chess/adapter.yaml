@@ -1,6 +1,6 @@
 name: a
 redirector_port: 9090
-spec: /whip/examples/chess/chess.spec
+spec: chess.whip
 interpreters:
   Chess: soap(wsdl='http://localhost:8000/?wsdl')
 server_proxies:

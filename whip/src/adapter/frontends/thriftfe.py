@@ -137,14 +137,14 @@ class ThriftProxyTerminus(ProxyTerminus):
         if 'path' not in callsite.extra.keys():
             raise ValueError('no path set in callsite')
         if self.protocol == 'binary-https':
-            import thrift.transport.THttpClient as THttpClient
+            from . import THttpInsecureClient as THttpClient
             url = "https://%s:%s%s" % (self.host, self.port, callsite
                 .extra['path'])
             trans = THttpClient.THttpClient(url)
-            trans.setCustomHeaders({
-                'User-Agent': "DProxy / 0.1; Python / %s;"
-                % (sys.version,)
-            })
+            # trans.setCustomHeaders({
+            #     'User-Agent': "DProxy / 0.1; Python / %s;"
+            #     % (sys.version,)
+            # })
             prot = TBinaryProtocol.TBinaryProtocol(trans)
         else:
             trans = thriftutil.get_transport(self.host, self.port, self.transport == 'framed')

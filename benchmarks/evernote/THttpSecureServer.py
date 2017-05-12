@@ -24,6 +24,12 @@ from thrift.transport import TTransport
 
 import ssl
 
+def _bare_address_string(self):
+    host, port = self.client_address[:2]
+    return str(host)
+
+BaseHTTPServer.BaseHTTPRequestHandler.address_string = \
+        _bare_address_string
 
 class ResponseException(Exception):
   """Allows handlers to override the HTTP response
@@ -66,10 +72,11 @@ class THttpServer(TServer.TServer):
     class RequestHander(BaseHTTPServer.BaseHTTPRequestHandler):
       def log_request(*args, **kw): pass
       def do_POST(self):
+        self.address_string = _bare_address_string
         # Don't care about the request path.
         itrans = TTransport.TFileObjectTransport(self.rfile)
         otrans = TTransport.TFileObjectTransport(self.wfile)
-        self.rfile.read(2) # XXX to catch the two carraige returns that separate the headers from the body
+        #self.rfile.read(2) # XXX to catch the two carraige returns that separate the headers from the body
         itrans = TTransport.TBufferedTransport(
           itrans, int(self.headers['Content-Length']))
         otrans = TTransport.TMemoryBuffer()

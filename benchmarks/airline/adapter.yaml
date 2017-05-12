@@ -1,6 +1,6 @@
 name: airline-adapter
 redirector_port: 9090
-spec: airline.spec
+spec: airline.whip
 server_proxies:
   - 127.0.0.1:8000 using soap(wsdl='http://localhost:8000/?wsdl') proxiedby 127.0.0.1:8001 mapstoservice Airline
 client_proxies:

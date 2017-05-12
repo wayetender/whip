@@ -27,7 +27,7 @@ RUN buildDeps=" \
 	&& tar zxf thrift.tar.gz -C /usr/src/thrift --strip-components=1 \
 	&& rm thrift.tar.gz \
 	&& cd /usr/src/thrift \
-	&& ./configure  --without-python --with-cpp \
+	&& ./configure  --without-tests --without-python --with-cpp \
 	&& make \
 	&& make install \
 	&& cd / \

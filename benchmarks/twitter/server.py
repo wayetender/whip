@@ -53,12 +53,11 @@ if __name__ == "__main__":
     t.setDaemon(True)
     t.start()
     import sys
-    sys.path.append('../')
     import test_utils
-    test_utils.setup_adapter_only('adapter.yaml', 1)()
+    test_utils.setup_adapter_only('adapter.yaml', 0)()
     import psutil
     import os
-    startTime = time.time()
+    startTime = 0
     try:
         process = psutil.Process(os.getpid())
         process = process.children(recursive=True)[1]
@@ -67,6 +66,7 @@ if __name__ == "__main__":
                 sz = os.path.getsize('/tmp/lru3.dat') if os.path.exists('/tmp/lru3.dat') else 0
                 mem = process.memory_info()
                 print "%s,%s,%s,%s" % (time.time() - startTime, mem.rss / 1024, sz / 1024, requests)
-            time.sleep(4)
+                sys.stdout.flush()
+            time.sleep(2)
     except KeyboardInterrupt:
         pass

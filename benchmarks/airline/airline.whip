@@ -1,20 +1,14 @@
 
-ghost BookingRequest {
-    @identifier bookingRequestNumber
-}
-
-
 service Airline {
 
     bookSeat(isTestOnly, bookingRequestNumber, flightId, passenger)
-    @identifies bookingReq:BookingRequest by {{ bookingRequestNumber }}
-    @precondition {{ isFresh(bookingReq) }}
-    @precondition {{ ' ' not in passenger['firstName'] }}
-    @precondition {{ ' ' not in passenger['lastName'] }}
-    @postcondition {{ 
+    @requires {{ isFresh(bookingReq) }}
+    @requires {{ ' ' not in passenger['firstName'] }}
+    @requires {{ ' ' not in passenger['lastName'] }}
+    @ensures {{ 
        bookingRequestNumber == result['bookingRequestNumber'] and flightId == result['flightId']
     }}
-    @postcondition {{
+    @ensures {{
         passenger['firstName'] == result['passenger']['firstName'] and \
             passenger['lastName'] == result['passenger']['lastName'] and \
             flightId == result['flightId']
@@ -22,7 +16,7 @@ service Airline {
     
 
     findSeats(departAirport, arriveAirport, earliestDepartTime, latestDepartTime, minimumSeatsAvailable, maximumFlightsToReturn)
-    @postcondition {{
+    @ensures {{
         if maximumFlightsToReturn < len(result): return False
         for row in result:
             if row['departAirport'] != departAirport and departAirport != 'ANY': return False

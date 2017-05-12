@@ -1,0 +1,41 @@
+
+service UserStore {
+
+    getNoteStoreUrl(authToken)
+    @where index is {{ authToken }}
+    @identifies NoteStore[] by {{
+        yield (result, authToken)
+    }}
+
+    getUser(authToken)
+    @where index is {{ authToken }}
+    @requires {{ len(authToken) > 0 }}
+}
+
+
+service NoteStore {
+    listNotebooks(authToken)
+    @where index is {{ authToken }}
+    @requires {{ len(authToken) < 0 }}
+
+    listLinkedNotebooks(authToken)
+    @where index is {{ authToken }}
+    @identifies NoteStore[] by {{
+        for notebook in result: 
+            #print notebook
+            yield (notebook.noteStoreUrl, notebook.shareKey)
+    }}
+    
+    getSharedNotebookByAuth(authToken)
+
+    authenticateToSharedNotebook(shareKey, authToken)
+    @requires {{ 
+        return True #len(shareKey) > 0
+    }}
+
+    findNotes(authToken, filter, offset, maxNotes)
+    @requires {{ offset >= 0 }}
+    @ensures {{ 
+        result.totalNotes <= maxNotes and result.totalNotes == len(result.notes)
+    }}
+}

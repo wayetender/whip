@@ -86,7 +86,7 @@ class THttpServer(TServer.TServer):
             raise ValueError('no viable processor found for path %s' % lastPath)
         itrans = TTransport.TFileObjectTransport(self.rfile)
         otrans = TTransport.TFileObjectTransport(self.wfile)
-        self.rfile.read(2) # XXX to catch the two carraige returns that separate the headers from the body
+        #self.rfile.read(2) # XXX to catch the two carraige returns that separate the headers from the body
         itrans = TTransport.TBufferedTransport(
           itrans, int(self.headers['Content-Length']))
         otrans = TTransport.TMemoryBuffer()

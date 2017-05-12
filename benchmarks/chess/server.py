@@ -31,6 +31,10 @@ logging.getLogger('spyne.protocol.xml').setLevel(logging.INFO)
 
 DELAY = 0.5
 
+startTime = 0
+numGames = 0
+requests = 0
+
 NS = "http://www.bennedik.com/webservices/XfccBasic"
 
 Result = Enum('Ongoing', 'WhiteWins', 'BlackWins', 'Draw', 'WhiteWinAdjucated', 'Cancelled', type_name='Result', __namespace__=NS)
@@ -128,16 +132,18 @@ class ChessService(ServiceBase):
     
     @rpc(Unicode, Unicode, _returns=res)
     def GetMyGames(ctx, username, password):
-        global DELAY
-        time.sleep(.459)
+        global DELAY, requests
+        #time.sleep(.459)
+        requests += 1
         games = ctx.app.gamesByUser.get(username, [])
         a = [g.generate_soap_obj(username) for g in games]
         return a
 
     @rpc(Unicode, Unicode, Integer, Boolean, Boolean, Integer, Unicode, Boolean, Boolean, Unicode, _returns=MakeAMoveResult)
     def MakeAMove(ctx, username, password, gameId, resign, acceptDraw, movecount, myMove, offerDraw, claimDraw, myMessage):
-        global DELAY
-        time.sleep(.465)
+        global DELAY, requests
+        requests += 1
+        #time.sleep(.465)
         game = ctx.app.games.get(gameId)
         if not game:
             return MakeAMoveResult.InvalidGameID
@@ -180,14 +186,20 @@ class ChessService(ServiceBase):
 
     @rpc(Unicode, Unicode, _returns=Integer)
     def MakeGame(ctx, whiteUser, blackUser):
-        global DELAY
-        time.sleep(DELAY)
+        global DELAY, startTime, numGames, requests
+        if numGames == 0:
+            startTime = time.time()
+        numGames += 1
+        requests += 1
+        #time.sleep(DELAY)
         today = date.today().strftime('%Y.%m.%d')
-        game_id = len(ctx.app.games)
+        game_id = numGames
         game = Game(game_id, blackUser, whiteUser, today, 'site')
+        ctx.app.games.clear()
         ctx.app.games[game_id] = game
-        ctx.app.gamesByUser[whiteUser] = ctx.app.gamesByUser.get(whiteUser, []) + [game]
-        ctx.app.gamesByUser[blackUser] = ctx.app.gamesByUser.get(blackUser, []) + [game]
+        ctx.app.gamesByUser.clear()
+        ctx.app.gamesByUser[whiteUser] = [game] # ctx.app.gamesByUser.get(whiteUser, []) + [game]
+        ctx.app.gamesByUser[blackUser] = [game] #ctx.app.gamesByUser.get(blackUser, []) + [game]
         return game_id
 
 class ChessApplication(Application):
@@ -239,6 +251,28 @@ def make_app():
     return make_server('0.0.0.0', 8000, wsgi_app, handler_class=QuietHandler)
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    import sys
+    import test_utils
+    import os
+    import psutil
+    from threading import Thread
     server = make_app()
-    server.serve_forever()
+    t1 = Thread(target=server.serve_forever)
+    t1.daemon = True
+    t1.start()
+    test_utils.setup_adapter_only('adapter.yaml', 1)()
+    
+    
+    logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)3d %(funcName)20s() -- %(levelname)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+    logging.getLogger('spyne.protocol.xml').setLevel(logging.INFO)
+    
+    while True:
+        process = psutil.Process(os.getpid())
+        process = process.children(recursive=True)[1]
+        while True:
+            if startTime > 0:
+                sz = os.path.getsize('/tmp/lru3.dat') if os.path.exists('/tmp/lru3.dat') else 0
+                mem = process.memory_info()
+                print "%s,%s,%s,%s" % (time.time() - startTime, mem.rss / 1024, sz / 1024, requests)
+                sys.stdout.flush()
+            time.sleep(2)

@@ -22,7 +22,7 @@ except StopIteration:
     pass
 
 f.close()
-f = open('starts_timing_%s.txt' % CASE, 'w')
+f = open('/results/timing_%s.tsv' % CASE, 'w')
 f.truncate()
 i = 1
 for p in sums:
@@ -45,8 +45,15 @@ f.close()
 xs = [int(x) for x in xs]
 import numpy
 a=numpy.array(xs)
-print "Byte sizes: ", conf_int_native(a)
+if CASE == 'evernote':
+    item = 10
+elif CASE == 'twitter':
+    item = 20
+else:
+    item = 30
 
+(b, c, d) = conf_int_native(a)
+print "%d\t%d\t%d\t%d" % (item, b, c, d)
 
 f = open('memory')
 sums = []
@@ -76,7 +83,7 @@ except StopIteration:
     pass
 
 f.close()
-f = open('starts_mem_%s.txt' % CASE, 'w')
+f = open('/results/memory_%s.tsv' % CASE, 'w')
 f.truncate()
 for (i,p,s) in sums:
     f.write("%d\t%s\t%s\n" % (i, p, s))

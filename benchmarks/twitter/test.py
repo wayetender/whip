@@ -5,10 +5,11 @@ from requests_oauthlib import OAuth1
 from urlparse import parse_qs
 import logging
 import sys
-sys.path.append('../')
 import test_utils
 import os
 
+
+## SSL DISABLED - Remove these 3 lines if you want to verify
 requests.packages.urllib3.disable_warnings()
 # These two lines enable debugging at httplib level (requests->urllib3->http.client)
 # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
