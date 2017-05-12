@@ -7,7 +7,7 @@ set :base_url, "http://whip.services/"
 activate :hashicorp do |h|
   h.releases_enabled = false
   h.github_slug = "wayetender/whip"
-  h.website_root = "docs"
+  h.website_root = "web"
 end
 
 activate :deploy do |deploy|
