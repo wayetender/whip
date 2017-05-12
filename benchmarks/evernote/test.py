@@ -42,7 +42,6 @@ def run_sharednotes(host, n=0):
     #     print n.name
 
     tracker = None
-    client.get_note_store()
     noteStore = test_utils.measure('getNoteStoreUrl', lambda: client.get_note_store())
     test_utils.track_traffic(noteStore._client, tracker)
     sharedNotebooks = test_utils.measure('listLinkedNotebooks', lambda: noteStore.listLinkedNotebooks())
