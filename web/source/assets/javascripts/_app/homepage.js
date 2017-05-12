@@ -73,13 +73,13 @@ var APP = APP || {};
               title: "Service Contracts",
               content: "This is the <code>Login</code> service",
               target: "spec-service-login",
-              placement: "bottom"
+              placement: "top"
             },
             {
               title: "Service Contracts",
               content: "... and this is the <code>User</code> service",
               target: "spec-service-user",
-              placement: "bottom"
+              placement: "top"
             },
             {
               title: "Service Operations",
