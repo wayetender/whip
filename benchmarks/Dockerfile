@@ -9,3 +9,5 @@ COPY plots.sh .
 COPY gen_charts.sh .
 
 VOLUME /results
+
+ENTRYPOINT ./gen_charts.sh

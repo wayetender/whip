@@ -4,7 +4,6 @@ services:
     build: .
     volumes:
       - ./results:/results
-    entrypoint: ./gen_charts.sh
   chess:
     build: ./chess
     depends_on:
@@ -13,7 +12,6 @@ services:
       NUM_OPS: ${NUM_OPS}
     volumes:
       - ./results:/results
-    entrypoint: ./run.sh
   twitter:
     build: ./twitter
     depends_on:
@@ -22,7 +20,6 @@ services:
       NUM_OPS: ${NUM_OPS}
     volumes:
       - ./results:/results
-    entrypoint: ./run.sh
   evernote:
     build: ./evernote
     depends_on:
@@ -31,4 +28,3 @@ services:
       NUM_OPS: ${NUM_OPS}
     volumes:
       - ./results:/results
-    entrypoint: ./run.sh
