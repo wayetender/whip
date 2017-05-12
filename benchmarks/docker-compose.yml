@@ -1,7 +1,7 @@
 version: '3'
 services:
   parse_results:
-    build: .
+    build: ./parse_results
     volumes:
       - ./results:/results
   chess:
