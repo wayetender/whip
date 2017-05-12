@@ -23,22 +23,21 @@ case studies. The case studies are:
 * **Evernote**: an Evernote Thrift API client.
 	You can find more information about the Evernote API at 
 	[https://dev.evernote.com/doc/](https://dev.evernote.com/doc/).
-* **Chess**: an SOAP-based Xfcc correspondence chess program. 
+* **Chess**: a SOAP-based Xfcc correspondence chess program. 
 	You can find more information about the Xfcc protocol at
 	[http://xfcc.org/](http://xfcc.org/).
 * **Twitter**: a REST-like Twitter API client.
 	You can find more information about the Twitter API at
 	[https://dev.twitter.com/overview/api](https://dev.twitter.com/overview/api).
 
-To evaluate how Whip impacts the performance of services it enhances, we designed
-our benchmarks to analyze the time, memory, and
+To evaluate how Whip impacts the performance of the services it enhances, we 
+designed our benchmarks to analyze the time, memory, and
 network overhead due to Whip. 
 
+#### Experimental Setup
 
-### Experimental Setup
-
-We do
-not use the actual third-party services for our experiments but instead mock their behavior, i.e., we simulate
+We do not use the actual third-party services for our experiments but instead 
+mock their behavior, i.e., we simulate
 their behavior with pre-computed responses for each request. This is for two reasons: 
 
 1. mocking services removes several sources of measurement noise, like service 
@@ -50,8 +49,7 @@ We collect the following measurements for each test. First, we record the time t
 the test suite and receive a reply for (1) the test client alone, and (2) the client enhanced with an adapter. The
 difference between these two measurements yields the latency due to the client’s adapter per request (adapter
 latency). Second, we record the amount of memory (RAM and hard-disk) used by the client’s adapter. Finally,
-we measure the adapter-to-adapter traffic (not including the original request or reply) in the TCP stream. We
-measure only the client’s adapter as it is the hub for all communication in each experiment.
+we measure the adapter-to-adapter traffic (not including the original request or reply) in the TCP stream. 
 
 Operations that identify a service entry always introduce the service entry (i.e., always use a new contract
 index and thus create new service entries in the adapters’ local state, which maximizes local state size). 
@@ -60,7 +58,8 @@ index and thus create new service entries in the adapters’ local state, which 
 
 To run the benchmarks, you will need to have a recent version of Docker (at least
 version v1.13.0) installed on your computer. For instructions on downloading
-and installing Docker, please see [https://www.docker.com/get-docker](https://www.docker.com/get-docker).
+and installing Docker, please see 
+[https://www.docker.com/get-docker](https://www.docker.com/get-docker).
 
 Once Docker is installed,
 you will need to clone the Whip repository and the directory we will be 
@@ -97,21 +96,25 @@ The benchmarks are run through [Docker Compose](https://docs.docker.com/compose/
 The `docker-compose.yml` file describes the containers that will be run. In
 this suite, there are four containers:
 
-* **evernote**: the Evernote test benchmark.
-* **chess**: the Chess test benchmark.
-* **twitter**: the Twitter test benchmark.
-* **parse_results:** parses the raw benchmark outputs to produce human-readable
-plots.
+* **evernote**: the Evernote test benchmark
+* **chess**: the Chess test benchmark
+* **twitter**: the Twitter test benchmark
+* **parse_results:** produces human-readable plots from raw benchmark data
 
-The `docker-compose.yml` file is parameterized by the `NUM_OPS` variable, which
-sets the number of operations to run per benchmark.
 
 #### Running with Docker Compose
 
 To run the benchmarks, simply set the `NUM_OPS` environmental variable to the
 number of operations you want the benchmarks to perform and then run the
-`docker-compose up --build` command. Below is an example run and its output
-with 1,000 operations per benchmark (3,000 operations in total).
+`docker-compose up --build` command. 
+The `docker-compose.yml` file is parameterized by the `NUM_OPS` variable, which
+sets the number of operations to run per benchmark.
+In the "[Anatomy of the Benchmarks](#anatomy-of-the-benchmarks)" section, 
+we describe the benchmark's operation in more detail.
+
+Below is an example run and its output
+with 3,000 operations per benchmark (9,000 operations in total). 
+
 
 ```bash
 $ NUM_OPS=3000 docker-compose up --build
@@ -136,8 +139,8 @@ parse_results_1  | Please check the results/images directory.
 benchmarks_parse_results_1 exited with code 0
 ```
 
-You can now check the `results/images` directory inside the `benchmarks` directory
-to find the following generated images:
+After running the benchmark, you can check the `results/images` directory inside 
+the `benchmarks` directory to find the following generated images:
 
 <div align="center">
 <img src="benchmarks_images/memorychart.png" alt="memorychart.png" style="width: 200px;"/> 
@@ -163,13 +166,17 @@ to find the following generated images:
 	75 bytes of overhead on average per operation, and Twitter and Chess producing 
 	roughly 50 bytes of overhead per operation.
 
--> **Note:** With the exception of the `networkchart.png` chart, the generated
+With the exception of the `networkchart.png` chart, the generated
 results will vary dramatically in absolute numbers depending on the number
 of resources given. 
 
-In the ICFP paper, the number of operations chosen was 10,000 (i.e., `NUM_OPS=10000`).
+-> **Note:** In the ICFP paper, the number of operations chosen was 10,000 (i.e., `NUM_OPS=10000`).
 That trial will take about 45 minutes to an hour to complete, depending on the 
 resources available to the Docker containers.
+
+!> **Warning:** Due to bucketing of the raw output data, it is recommended to run the
+benchmarks with **at least** 500 operations per benchmark (i.e., `NUM_OPS=500`), 
+otherwise there will not be enough aggregate data to plot an image.
 
 ## Anatomy of the Benchmarks
 
@@ -193,7 +200,7 @@ see what proxies are being set up and how the contracts are wired together
 to their network protocols.
 * `{BENCHMARK_NAME}.whip`: This is the Whip contract file.
 
-~> For convenience, TLS verification has been disabled on the test clients as it
+~> **Caution:** For convenience, TLS verification has been disabled on the test clients as it
 can be difficult to install certificates on Docker hosts. For more information, 
 see the _[Docker documentation on the topic](https://docs.docker.com/engine/security/certificates/)_.
 Once the certificate is installed (and placed in the `server.pem` file for the mock server), 
