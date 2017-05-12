@@ -58,48 +58,55 @@ index and thus create new service entries in the adapters’ local state, which 
 
 ## Running the Benchmarks
 
-To run the benchmarks, you will need to have a recent (at least Docker
-version v1.13.0) Docker on your computer. For instructions on downloading
-and install Docker, please see [https://www.docker.com/get-docker](https://www.docker.com/get-docker).
+To run the benchmarks, you will need to have a recent version of Docker (at least
+version v1.13.0) installed on your computer. For instructions on downloading
+and installing Docker, please see [https://www.docker.com/get-docker](https://www.docker.com/get-docker).
 
 Once Docker is installed,
 you will need to clone the Whip repository and the directory we will be 
 using is `benchmarks`. You can clone the repository and access that directory 
-with the following commands (and show the directory structure):
+with the following two commands:
 
 ```
 $ git clone https://github.com/wayetender/whip.git
 Cloning into 'whip'...
 ...
-$ cd whip/benchmarks          
-$ tree
+$ cd whip/benchmarks  
+```
+
+
+#### Directory Structure
+
+The `benchmarks` directory is structured as follows:
+
+```
 .
 ├── docker-compose.yml
-├── Dockerfile
 ├── README.md
-├── gen_charts.sh
-├── parse.py
-├── plots.sh
 ├── evernote
 │   └── ...
 ├── chess
 │   └── ...
-└── twitter
+├── twitter
+│   └── ...
+└── parse_results
     └── ...
 ```
 
 The benchmarks are run through [Docker Compose](https://docs.docker.com/compose/).
 The `docker-compose.yml` file describes the containers that will be run. In
-particular, there are 4 containers:
+this suite, there are four containers:
 
-* **parse_results:** parses the raw benchmark outputs to produce human-readable
-plots.
 * **evernote**: the Evernote test benchmark.
 * **chess**: the Chess test benchmark.
 * **twitter**: the Twitter test benchmark.
+* **parse_results:** parses the raw benchmark outputs to produce human-readable
+plots.
 
 The `docker-compose.yml` file is parameterized by the `NUM_OPS` variable, which
 sets the number of operations to run per benchmark.
+
+#### Running with Docker Compose
 
 To run the benchmarks, simply set the `NUM_OPS` environmental variable to the
 number of operations you want the benchmarks to perform and then run the
@@ -107,7 +114,7 @@ number of operations you want the benchmarks to perform and then run the
 with 1,000 operations per benchmark (3,000 operations in total).
 
 ```bash
-$ NUM_OPS=1000 docker-compose up --build
+$ NUM_OPS=3000 docker-compose up --build
 Building parse_results
 ...
 Attaching to benchmarks_parse_results_1, benchmarks_twitter_1, benchmarks_evernote_1, benchmarks_chess_1
@@ -132,11 +139,19 @@ benchmarks_parse_results_1 exited with code 0
 You can now check the `results/images` directory inside the `benchmarks` directory
 to find the following generated images:
 
-* `memorychart.png`: This chart shows the resident set size of the
+<div align="center">
+<img src="benchmarks_images/memorychart.png" alt="memorychart.png" style="width: 200px;"/> 
+<img src="benchmarks_images/throughputchart.png" alt="throughputchart.png" style="width: 200px;"/> 
+<img src="benchmarks_images/networkchart.png" alt="Drawing" style="width: 200px;"/> 
+</div>
+
+* `memorychart.png`: 
+ 	This chart shows the resident set size of the
 	adapter and the dashed lines show the sizes of the store on disk.
 	In general, the memory usage of the adapters should level off to be
 	constant, while the store size (shown in dashed lines) should increase
 	linearly.
+		
 * `throughputchart.png`: This chart shows the latency of the adapter as
 	the number of requests increases. Each point is the average of the 250 
 	requests around it. In general, the latency of all three benchmarks
@@ -153,8 +168,8 @@ results will vary dramatically in absolute numbers depending on the number
 of resources given. 
 
 In the ICFP paper, the number of operations chosen was 10,000 (i.e., `NUM_OPS=10000`).
-That trial will take about 45 minutes to complete, depending on the resources
-available to the Docker containers.
+That trial will take about 45 minutes to an hour to complete, depending on the 
+resources available to the Docker containers.
 
 ## Anatomy of the Benchmarks
 
