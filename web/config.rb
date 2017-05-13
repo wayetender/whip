@@ -10,6 +10,10 @@ activate :hashicorp do |h|
   h.website_root = "web"
 end
 
+set :relative_links, true
+activate :relative_assets
+
+
 activate :deploy do |deploy|
   deploy.method = :git
   # Optional Settings

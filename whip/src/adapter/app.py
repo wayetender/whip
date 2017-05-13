@@ -32,11 +32,12 @@ if __name__ == '__main__':
         i = parse_interpreter(interpreter)
         app.register_interpreter(nm, i)
 
-    proxies = parse_proxy_list(config.get('server_proxies', []), 'server')
-    proxies += parse_proxy_list(config.get('client_proxies', []), 'client')
-
-    for proxy_config in proxies:
+    for proxy_config in parse_proxy_list(config.get('server_proxies', []), 'server'):
         app.register_proxy(proxy_config, config['proxy_name'])
+
+    for proxy_config in parse_proxy_list(config.get('client_proxies', []), 'client'):
+        app.register_proxy(proxy_config, 'unknown')
+
 
     REDIRECTOR_BYTESIZE = 59
     try:

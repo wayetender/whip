@@ -144,6 +144,8 @@ def report_error(registry, msg, identities, env={}, callsite = None):
         for k, v in env.items():
             if k.startswith('_') or type(v) == types.FunctionType:
                 continue
+            if k == 'StringIO':
+                continue
             if hasattr(v, 'state'):
                 msg += " - %s = Ghost {\n" % k
                 for k1,v1 in v.state.items():
@@ -539,6 +541,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         references = self.compute_references(callsite, rpc)
         env = dict(zip(rpc.formals, callsite.args) + references2)
         (res, msg) = check_precondition(rpc, env)
+        msg += "\n\t %sBlaming:%s %s (precondition failure)" % (bcolors.WARNING, bcolors.ENDC, callsite.from_proxy_name)
         if not res:
             report_error(self.registry, msg, references, env, callsite)
 

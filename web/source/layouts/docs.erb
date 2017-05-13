@@ -3,10 +3,13 @@
 		<div class="docs-sidebar hidden-print affix-top" role="complementary">
 			<ul class="nav docs-sidenav">
 				<li<%= sidebar_current("docs-home") %>>
-				<a href="/docs/index.html">Home</a>
+				<a href="<%= url_for('index.html') %>">Home</a>
+				</li>
+				<li<%= sidebar_current("getting-started") %>>
+				<a href="<%= url_for('getting-started.html') %>">Getting Started</a>
 				</li>
 				<li<%= sidebar_current("benchmarks") %>>
-				<a href="/docs/benchmarks.html">Benchmarks</a>
+				<a href="<%= url_for('benchmarks.html') %>">Benchmarks</a>
 				</li>
 			</ul>
 		</div>

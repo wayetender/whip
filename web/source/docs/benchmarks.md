@@ -212,8 +212,8 @@ completes. Within each results subdirectory (given by the name of the benchmark)
 the following benchmark raw data files are created:
 
 * `bytes`: Each line corresponds to the number of bytes of Whip-specific information
-in an enhanced message. The adapter computes this information (e.g., in 
-`whip/src/adapter/frontends/thriftfe.py`) by computing the byte size difference
+in an enhanced message. The adapter computes this information (i.e., in 
+`whip/src/adapter/proxy.py`) by computing the byte size difference
 between the original unenhanced message and the Whip-enhanced message.
 * `clientcalls`: Each line corresponds to the number of milliseconds it took
 for a client request to complete from beginning to end. The `test.py` test client
