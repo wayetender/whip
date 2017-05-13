@@ -541,7 +541,8 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         references = self.compute_references(callsite, rpc)
         env = dict(zip(rpc.formals, callsite.args) + references2)
         (res, msg) = check_precondition(rpc, env)
-        msg += "\n\t %sBlaming:%s %s (precondition failure)" % (bcolors.WARNING, bcolors.ENDC, callsite.from_proxy_name)
+        bl = callsite.from_proxy_name if callsite.from_proxy_name != '_' else self.name
+        msg += "\n\t %sBlaming:%s %s (precondition failure)" % (bcolors.WARNING, bcolors.ENDC, bl)
         if not res:
             report_error(self.registry, msg, references, env, callsite)
 

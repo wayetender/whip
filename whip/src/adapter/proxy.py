@@ -542,6 +542,7 @@ class ClientProxy(object):
             ###ghosts.append(len(identities) + len(proxies) + v1)
             ###self.app.ghostsperop[opname] = ghosts
         else:
+            callsite.from_proxy_name = 'unknown' if self.service.knownbyport else '_'
             self.app.before_server(callsite, identities, proxies=proxies)
             pause = datetime.datetime.now()
             callsite.result = self.terminus.execute_request(callsite)
