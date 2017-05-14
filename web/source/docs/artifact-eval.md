@@ -138,6 +138,7 @@ demonstrate the following concretely in the following order:
 3. Whip can capture higher-order contract failures (top of p5). In particular,
 	Whip uses imprecise blame under partial deployment (end of Section 3.3).
 4. Whip uses precise blame under full deployment (Section 3.4)
+5. Whip uses precise blame for indexed contracts (end of Section 2)
 
 To show the second criterion, we provide the command to generate Figure 11.
 
@@ -282,7 +283,7 @@ In particular, Whip uses imprecise blame under partial deployment (end of Sectio
 
 To show the last objective, we must install an adapter on all services.
 
-Surprise! The other services were alread enhanced.
+It turns out that the other services were alread enhanced.
 
 Change the last line of `adapter_client.yaml` file from 
 
@@ -322,6 +323,48 @@ quit                            - Exits the program
 ```
 
 > **Objective 5:** Whip uses precise blame under full deployment (Section 3.4)
+
+
+Finally, we show how Whip tracks client-side errors with a special indexed contract
+form given in `whip/calculator.indexed.whip`. This indexed contract provides adder
+services only when the first operand (`a`) is exactly equal to 1. In all other cases,
+the adder service and discovery service do not vouch for its behavior.
+
+```
+$ docker-compose down
+$ docker-compose up --build -d
+...
+$ docker-compose run client ./run_client.sh
+connected to discovery service discovery:8000
+Available Commands:
+add [n1] [n2]                   - Get a random adder and compute n1+n2
+register_adder [host] [port]    - Register new adder service
+quit                            - Exits the program
+> add 1 1
+[Whip] Contract Failure: Failed postcondition  result == a + b 
+	 Occurring at: service Adder with index 1 at adder:8001 vouched for by adder
+	 Variables: 
+	   - a = 1
+	   - b = 1
+	   - result = 1
+
+1 + 1 = 1
+> add 2 2
+[Whip] Contract Failure: Failed postcondition  result == a + b 
+	 Occurring at: service Adder with index 2 at adder:8001 vouched for by client
+	 Variables: 
+	   - a = 2
+	   - b = 2
+	   - result = 3
+
+2 + 2 = 3
+```
+
+Note that the `adder` service was blamed in the first run but not in the second.
+
+---
+
+#### Bonus (fixing the adder and pre-condition errors)
 
 
 If you are so interested, you can also fix the broken adder by inspecting and

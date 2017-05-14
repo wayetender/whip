@@ -44,15 +44,21 @@ class ProxyApplication(object):
         return self.proxy_ports.get(proxy_port, None)
 
     def lookup_service(self, identifier):
+        # bl = identifier.partition('?')[0]
         res = self.services.get(identifier, [])
         if len(res) == 0:
             return (False, None)
         if len([s for s in res if s.service_name == res[0].service_name]) != len(res):
             return (False, res)
         candidate = res[0]
+        #res += self.services.get(identifier.partition('?')[0], [])
         for s in res:
             if s.proxy_type == 'server':
                 candidate = s
+        if not candidate.proxy_endpoint:
+            prime = self.services.get(identifier.partition('?')[0], [])
+            if len(prime) > 0:
+                candidate.proxy_endpoint = prime[0].proxy_endpoint
         return (True, candidate)
 
     def in_conflict(self, identifier):
@@ -587,7 +593,7 @@ class ServerProxyHandler(object):
         return s
 
     def get_identity_attributes(self, id):
-        raise ValueError("XXX todo")
+        raise ValueError("XXX")
 
 
 class ServerProxy(object):

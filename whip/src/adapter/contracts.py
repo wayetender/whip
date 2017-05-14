@@ -100,7 +100,9 @@ class Registry(object):
             raise ValueError("unknown identity type: %s" % name)
 
     def lookup_or_create_service(self, name, identifier, cs, resolver):
-        key = (name, identifier)
+        #identifier2 = identifier
+        identifier2 = identifier.partition('?')[0]
+        key = (name, identifier2)
         endpoint = (identifier.rpartition(':')[0], identifier.rpartition(':')[2])
         fromhttppath = None
         if 'http' in identifier:
@@ -118,11 +120,11 @@ class Registry(object):
             fromhttppath = o.path
             identifier = "%s://%s:%d%s" % (o.scheme, str(ip), port, o.path)
         default = resolver.create_default_service(name, identifier, cs)
-        return default
-        #if key not in self.identities:
-        #    self.identities[key] = default
+        #return default
+        if key not in self.identities:
+            self.identities[key] = default
         #print "service lookup on %s resulted in %s (is default = %r)" % (key, self.identities[key], is_default)
-        #return self.identities[key]
+        return self.identities[key]
 
     def lookup_or_create_ghost(self, name, identifier, cs, resolver, my_id):
         key = (name, my_id.identifier + ':' + identifier if my_id else identifier)
@@ -138,7 +140,7 @@ def report_error(registry, msg, identities, env={}, callsite = None):
     msg = WhipMsg + bcolors.FAIL + "Contract Failure: " + bcolors.ENDC + msg
     msg += bcolors.WARNING
     if callsite:
-        msg += "\n\t Occurring at: " + bcolors.ENDC + str(callsite.service)
+        msg += "\n\t Occurring at: " + bcolors.ENDC + str(callsite.service.friendly_name())
     if len(env) > 0:
         msg += bcolors.WARNING + "\n\t Variables: \n" + bcolors.ENDC
         for k, v in env.items():
@@ -221,6 +223,13 @@ class ContractService(proxy.Service):
 
     def __repr__(self):
         return str(self)
+
+
+    def friendly_name(self):
+        if '?' in self.overridden_id:
+            return 'service %s with index %s at %s vouched for by %s' % (self.decl.name, self.overridden_id.partition('?')[2], self.overridden_id.partition('?')[0], ', '.join(self.blame_labels))
+        else:
+            return 'service %s with default index at %s vouched for by %s' % (self.decl.name, self.overridden_id, ', '.join(self.blame_labels))
 
     def __str__(self):
         if self.is_proxied():
@@ -344,7 +353,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     nenv = dict(env.items() + [('yield', y)])
                     eval_code(nenv, tag.expr)
                     items.append((tag.name, inner_items))
-                else:            
+                else:
                     identifier = str(eval_code(env, tag.expr))
                     ghost = self.registry.lookup_or_create_id(tag.type, identifier, callsite.to_thrift_object(), self.resolver, identity)
                     items.append((tag.name, ghost))
@@ -353,11 +362,12 @@ class ContractsProxyApplication(proxy.ProxyApplication):
     def mark_this_service(self, env, callsite, rpc, blame_label):
         found = False
         identifier = callsite.service.overridden_id
+        s = None
         for tag in rpc.tags:
             if isinstance(tag, WhereTag):
                 found = True
                 index = eval_code(env, tag.expr)
-                identifier = "%s?%s" % (callsite.service.overridden_id, index)
+                identifier = "%s?%s" % (callsite.service.overridden_id.partition('?')[0], index)
                 identifier = str(identifier).encode('ascii', 'ignore')
                 (_, s) = self.lookup_service(identifier)
         if not found:
@@ -368,8 +378,9 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             proxy_config['identifier'] = identifier
             #print "--- registering locally this= %s %s" % (identifier, proxy_config)
             self.register_proxy(proxy_config, blame_label)
-            return [blame_label]
-        return s.blame_labels
+            (_,s) = self.lookup_service(callsite.service.overridden_id)
+            return ([blame_label], s)
+        return (s.blame_labels, s)
 
 
          
@@ -505,12 +516,14 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         #logger.debug("before client: %s", callsite)
         if callsite.opname in callsite.service.decl.rpcs:
             rpc = callsite.service.decl.rpcs[callsite.opname]
+            bl = 'unknown' if callsite.service.knownbyport else self.name
+            #print 'the blame label is %s' % bl
             assert len(rpc.formals) == len(callsite.args)
             references = self.compute_references(callsite, rpc)
             env = dict(zip(rpc.formals, callsite.args))
-            blame_label = self.mark_this_service(env, callsite, rpc, self.name)
+            (blame_label, this_service) = self.mark_this_service(env, callsite, rpc, self.name)
             #print "--> client: blame label: %s" % blame_label
-            proxies = self.handle_references(references,blame_label)
+            proxies = self.handle_references(references, bl)
             self.unfreshen([v for (k, v) in references])
             references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
             env = dict(zip(rpc.formals, callsite.args) + references2)
@@ -530,10 +543,11 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             logger.debug("unknown rpc %s", callsite.opname)
             return
         rpc = callsite.service.decl.rpcs[callsite.opname]
+        bl = callsite.from_proxy_name if callsite.from_proxy_name != '_' else self.name
         references = self.compute_references(callsite, rpc)
         env = dict(zip(rpc.formals, callsite.args))
         #print "i'm getting this from %s" % (callsite.from_proxy_name,)
-        blame_label = self.mark_this_service(env, callsite, rpc, callsite.from_proxy_name)
+        (blame_label, this_service) = self.mark_this_service(env, callsite, rpc, callsite.from_proxy_name)
         #print "--> server: blame label: %s" % blame_label
         self.handle_references(references,blame_label,proxies)
         references2 = self.to_js(references)  # [(k, v.to_js()) for (k,v) in references]
@@ -541,9 +555,9 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         references = self.compute_references(callsite, rpc)
         env = dict(zip(rpc.formals, callsite.args) + references2)
         (res, msg) = check_precondition(rpc, env)
-        bl = callsite.from_proxy_name if callsite.from_proxy_name != '_' else self.name
         msg += "\n\t %sBlaming:%s %s (precondition failure)" % (bcolors.WARNING, bcolors.ENDC, bl)
         if not res:
+            callsite.service = this_service
             report_error(self.registry, msg, references, env, callsite)
 
     def handle_references(self, references, blame_label, incoming_proxies=[]):
@@ -573,14 +587,12 @@ class ContractsProxyApplication(proxy.ProxyApplication):
                     self.register_proxy(proxy_config, bl)
         for r in computed:
             if isinstance(r[1], proxy.Attribute):
-                #print "$$$"
                 (should_forward, s) = self.lookup_service(r[1].identity.identifier)
                 if should_forward:
-                    #print "<-- forwarding %s" % (s,)
                     proxies.append(s)
                 else:
                     print s
-                    print "for some reason i shouldnt forwawrd..?"
+                    print "Conflict: not forwarding"
         return proxies
 
     def after_server(self, callsite):
@@ -591,7 +603,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
             assert len(rpc.formals) == len(callsite.args)
             references = self.compute_references(callsite, rpc)
             env = dict(zip(rpc.formals, callsite.args))
-            blame_label = self.mark_this_service(env, callsite, rpc, callsite.from_proxy_name)
+            (blame_label, this_service) = self.mark_this_service(env, callsite, rpc, callsite.from_proxy_name)
             #print "<-- server: blame label: %s" % blame_label
             proxies = self.handle_references(references,blame_label)
             self.unfreshen([v for (k, v) in references])
@@ -627,7 +639,7 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         rpc = callsite.service.decl.rpcs[callsite.opname]
         references = self.compute_references(callsite, rpc)
         env = dict(zip(rpc.formals, callsite.args))
-        blame_label = self.mark_this_service(env, callsite, rpc, self.name)
+        (blame_label, this_service) = self.mark_this_service(env, callsite, rpc, self.name)
         #print "--> client: blame label: %s" % blame_label
         self.handle_references(references,blame_label,proxies)
         assert len(rpc.formals) == len(callsite.args)
@@ -637,5 +649,6 @@ class ContractsProxyApplication(proxy.ProxyApplication):
         env = dict(zip(rpc.formals, callsite.args) + references2 + [('result', callsite.result)])
         (res, msg) = check_postcondition(rpc, env)
         if not res:
+            callsite.service = this_service
             report_error(self.registry, msg, references, env, callsite)
             
