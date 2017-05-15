@@ -67,9 +67,10 @@ contains the Whip adapter and interposition library described in the
 beginning of Section 6 of the paper. We refer to the interposition library
 in this document and in the source code simply as the _shim_. 
 
-We provide you with two ways to create the Whip base image: either by building
-the container manually from source, or by importing the image directly.
-We note that building the container manually, though is simply one command,
+We provide you with three ways to create the Whip base image: either by building
+the container manually from source, or by importing the image directly, or
+by pulling from the Docker Hub.
+We note that building the container manually, which can be done in one command,
 is computationally intensive and can take upwards of 30 minutes. In contrast,
 importing the image directly takes seconds.
 
@@ -91,10 +92,11 @@ importing the image directly takes seconds.
 	docker load -i whip.tar
 	```
 
-* **_(Bonus)_ Option 3:** From the Docker Hub
+* **Option 3:** From the Docker Hub
 
 	Though seemingly not recommended by the AEC (as it is an online resource), 
-	the preferred technique is to pull the image from the Docker Hub.
+	the preferred technique to load a Docker container is to pull the image 
+	from the Docker Hub.
 
 	```
 	docker pull wayetender/whip:v0.0.1 
@@ -116,20 +118,19 @@ we describe in the next section.
 
 In this section we propose how to evalute this artifact. 
 
-We feel that the artifact should be evaluated with two criteria. First, it should
+We believe that the artifact should be evaluated with two criteria. First, it should
 be evaluated on its ability to monitor services with the contract language 
 described in Section 2. In particular, it should demonstrate transparent 
 interception and inspection on the contents of messages 
 (i.e., treating the services as black boxes without requiring code changes) and
-also the ability to correctly report blame. Though the paper provides formal
-guarantees of the design of Whip, the prototype implemenation should also appear
-to faithfully implement that design. Second, the artifact should faithfully
+also the ability to correctly report blame. Second, the artifact should faithfully
 demonstrate the performance evaluation result trends described in Figure 11 
 and Section 7 of the paper. 
 
 To show the first criterion, we will perform a step-by-step tutorial of the
 Whip adapter using a simple microservices toy app. In particular, it will 
-demonstrate the following concretely in the following order:
+concretely demonstrate the following in order (with each feature's
+description in the ICFP paper given in parentheses):
 
 1. Whip can be deployed on an application with no code changes (bottom of p2).
 	Additionally, Whip can operate under partial deployment (i.e., only
@@ -140,16 +141,18 @@ demonstrate the following concretely in the following order:
 4. Whip uses precise blame under full deployment (Section 3.4)
 5. Whip uses precise blame for indexed contracts (end of Section 2)
 
-To show the second criterion, we provide the command to generate Figure 11.
+To show the second criterion, we provide a command to generate the benchmarks
+and images from Figure 11.
 
 ### Calculator Example
 
 In this section we provide a simple tutorial for the features of Whip with a 
 simple microservices application.
 
-=> **Tired of switching between the documentation and your terminal?** 
+<!-- => **Tired of switching between the documentation and your terminal?** 
 Try using the online version of this demo at 
 [Katacoda](https://katacoda.com/wayetender/scenarios/whip-calculator-quickstart)!
+ -->
 
 The microservices application is a simple distributed calculator. It
 consists of three services: an _adder_, which performs numeric addition
@@ -169,25 +172,69 @@ is:
 	returns the result to the client.
 
 The source code for this application is in the `whip-calculator-example`.
+The Thrift network protocol is defined in `src/calc.thrift`.
 
-We can run set up the first two steps of the workflow by performing the
-`docker-compose up --build -d` command. After giving the application a few
-moments to start up, we can confirm the application is running by checking
-the logs:
-
-```
-$ docker-compose logs
-Attaching to whipcalculatorexample_discovery_1, whipcalculatorexample_adder_1, whipcalculatorexample_client_1
-discovery_1  | 05/12/2017 10:28:00 PM INFO adder discovery service listening on 8000
-discovery_1  | 05/12/2017 10:28:02 PM DEBUG registering adder service adder:8001
-adder_1      | 05/12/2017 10:28:02 PM INFO adder service listening on 8001
-adder_1      | 05/12/2017 10:28:02 PM INFO registered with adder discovery on discovery:8000 as adder-8001
-```
-
-We can then run the client to perform the third step of the workflow.
+The first step is to build the containers. This can be done with the 
+`docker-compose build` command.
 
 ```
-% docker-compose run client ./run_client.sh
+$ docker-compose build
+Building adder
+...
+```
+
+We can then run the client by using the `docker-compose run client` command.
+When run, we will be presented with the calculator client. This command will
+also start up the adder and discovery service. For now, let's just use
+the `quit` command.
+
+```
+$ docker-compose run client
+Creating whipcalculatorexample_adder_1
+Creating whipcalculatorexample_discovery_1
+connected to discovery service discovery:8000
+Available Commands:
+add [n1] [n2]                   - Get a random adder and compute n1+n2
+register_adder [host] [port]    - Register new adder service
+quit                            - Exits the program
+> quit
+```
+
+We can use the `logs` docker-compose command to check the status of the 
+adder and discovery service.
+
+```
+$ docker-compose logs 
+Attaching to whipcalculatorexample_discovery_1, whipcalculatorexample_adder_1
+adder_1      | 05/14/2017 12:25:49 PM INFO adder service listening on 8001
+adder_1      | 05/14/2017 12:25:49 PM INFO registered with adder discovery on discovery:8000 as adder-8001
+discovery_1  | 05/14/2017 12:25:46 PM INFO adder discovery service listening on 7999
+discovery_1  | 05/14/2017 12:25:49 PM DEBUG registering adder service adder:8001
+```
+
+Note that the adder and discovery services are still running. To view
+their status, run the `docker-compose ps` command. To stop them,
+run `docker-compose down`.
+
+```
+$ docker-compose ps
+              Name                       Command         State                        Ports                       
+-----------------------------------------------------------------------------------------------------------------
+whipcalculatorexample_adder_1       ./run_adder.sh       Up      0.0.0.0:38001->38001/tcp, 0.0.0.0:8001->8001/tcp 
+whipcalculatorexample_discovery_1   ./run_discovery.sh   Up      0.0.0.0:38000->38000/tcp, 0.0.0.0:8000->8000/tcp 
+$ docker-compose down
+Stopping whipcalculatorexample_discovery_1 ... done
+Stopping whipcalculatorexample_adder_1 ... done
+Removing whipcalculatorexample_client_run_1 ... done
+Removing whipcalculatorexample_discovery_1 ... done
+Removing whipcalculatorexample_adder_1 ... done
+Removing network whipcalculatorexample_default
+```
+
+Let's now run the client to perform the third step of the workflow.
+
+```
+% docker-compose run client
 connected to discovery service discovery:8000
 Available Commands:
 add [n1] [n2]                   - Get a random adder and compute n1+n2
@@ -201,17 +248,19 @@ $
 
 _Uh oh._ Two plus two does not equal three. Let's use Whip to pinpoint the error.
 (Though, it should be no surprise, the adder has not held up its part of the bargain
-to perform the addition.)
+to perform the addition correctly.)
+
+
+> **Objective 1:** Whip can be deployed on an application with no code changes (bottom of p2).
+Additionally, Whip can operate under partial deployment (i.e., only
+one of the services will have a Whip adapter) (bottom of p2).
+
 
 We will start by installing an adapter on the client to catch the error.
 
 To do this we will need a Whip contract and a Whip adapter configuration. For the 
 tutorial, we have provided both: the contract is located in `whip/calculator.whip`
 and the configuration file for the client is located in `adapter_client.yaml`.
-We now describe each part of the configuration.
-
-
-!> Todo: describe config
 
 Of particular interest in the client proxy string:
 
@@ -222,7 +271,15 @@ Of particular interest in the client proxy string:
 This states that that there is an `AdderDiscovery` 
 service at the `discovery` host with port `8000`.
 
-We now need to deploy the client with the Whip adater with the above configuration.
+In order to deploy the client with the Whip adater with the above configuration,
+we need to create an adapter and use the shim library on the client.
+The `shim` command is a shell script that instructs the operating system
+to preload the interposition library to intercept on new network connections
+(described in more detail in Section 3).
+
+The entry point of the client application is in the `run_client.sh` script.
+Inspecting the file, we can see that the adapter is already created in the first
+line of the script. The only remaining step is to add the shim library.
 We can do that by modifying the last line of the `run_client.sh` script from:
 
 ```
@@ -235,21 +292,21 @@ to
 shim python src/client.py discovery 8000
 ```
 
-The `shim` command is a shell script that instructs the operating system
-to preload the interposition library to intercept on new network connections
-(described in more detail in Section 3).
+This will successfully install the Whip adapter on the client, without any
+code changes to the client itself.
 
-> **Objective 1:** Whip can be deployed on an application with no code changes (bottom of p2).
-Additionally, Whip can operate under partial deployment (i.e., only
-one of the services will have a Whip adapter) (bottom of p2).
 
-With this we can bring down the application, rebuild the containers (note:
-not the applications themselves), and run the client again:
+> **Objective 2:** Whip can capture first-order contract failures (bottom of p4).
+
+With the adapter installed we can bring down the application, rebuild the 
+containers (note: not the service applications themselves), and run the client again:
 
 ```
 $ docker-compose down
 ...
-$ docker-compose up --build -d
+$ docker-compose build
+...
+$ docker-compose run cient
 ...
 $ docker-compose run client ./run_client.sh
 connected to discovery service discovery:8000
@@ -259,12 +316,11 @@ register_adder [host] [port]    - Register new adder service
 quit                            - Exits the program
 > add 2 2
 [Whip] Contract Failure: Failed postcondition  result == a + b 
-	 Occurring at: unproxied adder:8001 {['unknown']}
+	 Occurring at: service Adder with default index at adder:8001 vouched for by unknown
 	 Variables: 
 	   - a = 2
 	   - b = 2
 	   - result = 3
-
 2 + 2 = 3
 > 
 ```
@@ -272,18 +328,39 @@ quit                            - Exits the program
 Success! I mean, failure! We have a contract failure, that is. We have successfully
 captured a first-order contract failure (i.e., that `2 + 2` is not equal to `3`).
 
-> **Objective 2:** Whip can capture first-order contract failures (bottom of p4).
-
-For our next objective (achieving higher-order blame), we simply need to inspect
-the blame labels in the previous report and the given contract.
-
 > **Objective 3:** Whip can capture higher-order contract failures (top of p5).
 In particular, Whip uses imprecise blame under partial deployment (end of Section 3.3).
 
 
-To show the last objective, we must install an adapter on all services.
+For our next objective (achieving higher-order blame), we simply need to inspect
+the blame labels in the previous report and the given contract.
 
-It turns out that the other services were alread enhanced.
+The line of interest is:
+
+```
+Occurring at: service Adder with default index at adder:8001 vouched for by unknown
+```
+
+In this line, we can see that the error came from the adder service. By inspecting
+the `adapter_client.yaml` file, we can see that the client is not initially
+configured to know about the location of adder service. Instead, Whip only knows
+about the adder service through the call to `get_adder_info`. (If you are curious,
+you can remove the `@identifies` tag for the `get_adder_info` Whip contract
+and the contract would not be checked.)
+
+Additionally, the service was `vouched for by unknown`. That is, the imprecise 
+blame label was used. 
+
+
+> **Objective 4:** Whip uses precise blame under full deployment (Section 3.4)
+
+
+To show the last objective, we must install an adapter on all services.
+It turns out that the other services were already enhanced and we only
+need to make the client aware of the discovery service (which
+can be confirmed by inspecting the `run_adder.sh` and `run_discovery.sh`
+scripts). We can make the client aware of the discovery Whip adapter
+with a simple configuration change for the client adapters.
 
 Change the last line of `adapter_client.yaml` file from 
 
@@ -291,7 +368,7 @@ Change the last line of `adapter_client.yaml` file from
   - discovery:8000 mapstoservice AdderDiscovery
 ```
 
-to
+to:
 
 ```
   - discovery:8000 proxiedby discovery:38000 mapstoservice AdderDiscovery
@@ -303,9 +380,12 @@ not the applications themselves), and run the client again:
 ```
 $ docker-compose down
 ...
-$ docker-compose up --build -d
+$ docker-compose build
 ...
-$ docker-compose run client ./run_client.sh
+$ % docker-compose run client
+Creating network "whipcalculatorexample_default" with the default driver
+Creating whipcalculatorexample_adder_1
+Creating whipcalculatorexample_discovery_1
 connected to discovery service discovery:8000
 Available Commands:
 add [n1] [n2]                   - Get a random adder and compute n1+n2
@@ -313,28 +393,43 @@ register_adder [host] [port]    - Register new adder service
 quit                            - Exits the program
 > add 2 2
 [Whip] Contract Failure: Failed postcondition  result == a + b 
-	 Occurring at: adder:8001 {['adder']} proxiedby ('adder', 38001)
+	 Occurring at: service Adder with default index at adder:8001 vouched for by adder
 	 Variables: 
 	   - a = 2
 	   - b = 2
 	   - result = 3
 
 2 + 2 = 3
+> quit
 ```
 
-> **Objective 5:** Whip uses precise blame under full deployment (Section 3.4)
+We can see now in this case the adder service was vouched for by the adder
+adapter (the name "adder" comes from the `whip/adapter_adder.yaml` configuration
+file).
+
+> **Objective 5:** Whip uses precise blame for indexed contracts (end of Section 2)
 
 
-Finally, we show how Whip tracks client-side errors with a special indexed contract
+Finally, we show how Whip tracks indexed contracts with a special indexed contract
 form given in `whip/calculator.indexed.whip`. This indexed contract provides adder
 services only when the first operand (`a`) is exactly equal to 1. In all other cases,
-the adder service and discovery service do not vouch for its behavior.
+the adder service and discovery service do not vouch for its behavior. In other words,
+if the client provides an `a` operand to the adder that is not exactly `1` then
+it will vouch for the behavior of the adder service.
+
+Modify each Whip configuration file (`adapter_adder.yaml`, `adapter_client.yaml`,
+and `adapter_discovery.yaml`) to have the `spec` field be `whip/calculator.indexed.whip`
+instead of `whip/calculator.whip`.
+
+Once the configuration files are modified, we can rebuild the containers and try
+running the client with different arguments for `a`:
 
 ```
 $ docker-compose down
-$ docker-compose up --build -d
 ...
-$ docker-compose run client ./run_client.sh
+$ docker-compose build
+...
+$ docker-compose run client
 connected to discovery service discovery:8000
 Available Commands:
 add [n1] [n2]                   - Get a random adder and compute n1+n2
@@ -358,9 +453,13 @@ quit                            - Exits the program
 	   - result = 3
 
 2 + 2 = 3
+> quit
 ```
 
-Note that the `adder` service was blamed in the first run but not in the second.
+Note that the `adder` service was blamed in the first run but not in the second,
+as the client introduced the new Adder service in the second run (as `a` was not
+equal to 1).
+
 
 ---
 
@@ -375,7 +474,11 @@ error will go away.
 You can also see client-side errors as follows:
 
 ```
-docker-compose run client ./run_client.sh
+$ docker-compose down
+...
+$ docker-compose build
+...
+$ docker-compose run client
 connected to discovery service discovery:8000
 Available Commands:
 add [n1] [n2]                   - Get a random adder and compute n1+n2
@@ -388,7 +491,7 @@ $ docker-compose logs --tail 7 adder
 Attaching to whipcalculatorexample_adder_1
 adder_1      | [Whip] Contract Failure: Failed precondition for RPC add ( a > 0 and b > 0 )
 adder_1      | 	 Blaming: client (precondition failure)
-adder_1      | 	 Occurring at: adder:8001 {['adder']} proxiedby ('adder', '38001')
+adder_1      | 	 Occurring at: service Adder with default index at adder:8001 vouched for by adder
 adder_1      | 	 Variables: 
 adder_1      | 	   - a = 0
 adder_1      | 	   - b = 0
@@ -396,9 +499,10 @@ adder_1      |
 ```
 
 Note that in this case, the precondition error (providing a nonpositive integer) 
-was caught in the `adder` service. This is because,
+was caught in the `adder` service's Whip adapter. This is because,
 as described in Section 3.4, when using enhanced communication adapters will share
 the burden of contract checking. Note though that still the client was blamed.
+
 
 ### Benchmarks
 
@@ -487,7 +591,7 @@ After running the benchmark, you can check the `results/images` directory inside
 the `benchmarks` directory to find the following generated images:
 
 <div align="center">
-<img src="benchmarks_images/memorychart.png" alt="memorychart.png" style="width: 200px;"/> 
+<img src="benchmarks_images/memorychart.png" alt="memorychart.png" style="width: 200px;"/>
 <img src="benchmarks_images/throughputchart.png" alt="throughputchart.png" style="width: 200px;"/> 
 <img src="benchmarks_images/networkchart.png" alt="Drawing" style="width: 200px;"/> 
 </div>
@@ -519,7 +623,7 @@ That trial will take about 45 minutes to an hour to complete, depending on the
 resources available to the Docker containers.
 
 !> **Warning:** Due to bucketing of the raw output data, it is recommended to run the
-benchmarks with **at least** 500 operations per benchmark (i.e., `NUM_OPS=500`), 
+benchmarks with **at least** 1,00 operations per benchmark (i.e., `NUM_OPS=1000`), 
 otherwise there will not be enough aggregate data to plot an image.
 
 #### Anatomy of the Benchmarks
