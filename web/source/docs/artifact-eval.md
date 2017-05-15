@@ -99,7 +99,7 @@ importing the image directly takes seconds.
 	from the Docker Hub.
 
 	```
-	docker pull wayetender/whip:v0.0.1 
+	docker pull wayetender/whip:v0.1.0 
 	```
 
 You can test the image was installed correctly by running the `adapter`
