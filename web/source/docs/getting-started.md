@@ -35,6 +35,7 @@ bash). Though the steps should reasonably work on a Windows-based operating syst
 (as most of the functionality of Whip is contained in a Docker container), it has 
 not been tested on one.
 
+### Calculator App
 
 
 The microservices application is a simple distributed calculator. It
@@ -134,6 +135,8 @@ _Uh oh._ Two plus two does not equal three. Let's use Whip to pinpoint the error
 to perform the addition correctly.)
 
 
+## Installing a Whip Adapter
+
 We will start by installing an adapter on the client to catch the error.
 
 To do this we will need a Whip contract and a Whip adapter configuration. For the 
@@ -221,6 +224,7 @@ Additionally, the service was `vouched for by unknown`. That is, the imprecise
 blame label was used. 
 
 
+### Enhanced Communication
 
 We now install an adapter on all services.
 It turns out that the other services were already enhanced and we only
@@ -275,6 +279,8 @@ adapter (the name "adder" comes from the `whip/adapter_adder.yaml` configuration
 file).
 
 
+### Indexed Contracts
+
 We show how Whip tracks indexed contracts with a special indexed contract
 form given in `whip/calculator.indexed.whip`. This indexed contract provides adder
 services only when the first operand (`a`) is exactly equal to 1. In all other cases,
@@ -325,8 +331,6 @@ Note that the `adder` service was blamed in the first run but not in the second,
 as the client introduced the new Adder service in the second run (as `a` was not
 equal to 1).
 
-
----
 
 #### Bonus (fixing the adder and pre-condition errors)
 
