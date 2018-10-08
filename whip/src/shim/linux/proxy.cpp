@@ -48,9 +48,9 @@ int connect(int sockfd, const struct sockaddr *res, socklen_t addrlen)
     int port = ntohs(((struct sockaddr_in*)res)->sin_port);
     char address[1024] = "";
 
-    // if (port == 9090) {
-    //     return original_connect(sockfd, res, addrlen);
-    // }
+    if (port == 9090) {
+        return original_connect(sockfd, res, addrlen);
+    }
     
     TTransport* trans;
     RedirectionClient* client = NULL;
@@ -83,7 +83,7 @@ int connect(int sockfd, const struct sockaddr *res, socklen_t addrlen)
         if (port != 53) {   // dns
             RedirectionInfo info;
             trans->open();
-            //fprintf(stderr, "getting redirection info for %s:%d\n", address, port);
+            fprintf(stderr, "getting redirection info for %s:%d\n", address, port);
             client->get_redirection_info(info, address, port);
             trans->close();
             if (info.is_proxied)

@@ -2,7 +2,7 @@ FROM python:2.7
 MAINTAINER Lucas Waye <lucas@lucaswaye.com>
 
 # Thrift-specific
-ENV THRIFT_VERSION 0.9.3
+ENV THRIFT_VERSION 0.10.0
 RUN buildDeps=" \
 		automake \
 		bison \

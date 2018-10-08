@@ -3,7 +3,7 @@ MAINTAINER Lucas Waye <lucas@lucaswaye.com>
 
 WORKDIR /whip
 COPY src src
-ENV THRIFT_VERSION 0.9.3
+ENV THRIFT_VERSION 0.10.0
 RUN buildDeps=" \
 		automake \
 		bison \
@@ -27,7 +27,7 @@ RUN buildDeps=" \
 	&& tar zxf thrift.tar.gz -C /usr/src/thrift --strip-components=1 \
 	&& rm thrift.tar.gz \
 	&& cd /usr/src/thrift \
-	&& ./configure  --without-tests --without-python --with-cpp \
+	&& ./configure --without-tests --without-python --with-cpp \
 	&& make \
 	&& make install \
 	&& cd / \
